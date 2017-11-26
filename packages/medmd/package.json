@@ -1,7 +1,7 @@
 {
-  "name": "@minodisk/medkit",
+  "name": "@minodisk/medmd",
   "version": "0.0.0",
-  "description": "Medium SDK supports CRUD post(s) for Node",
+  "description": "Markdown for Medium",
   "main": "lib/index.js",
   "repository": "git@github.com:minodisk/medic.git",
   "author": "Daisuke Mino <daisuke.mino@gmail.com>",
@@ -11,9 +11,6 @@
     "test": "yarn run jest",
     "format": "yarn run prettier *.json *.md src/*.js lib/*.js -- --write",
     "prepublish": "yarn run build && yarn run format"
-  },
-  "dependencies": {
-    "puppeteer": "^0.13.0"
   },
   "devDependencies": {
     "babel-cli": "^6.26.0",
