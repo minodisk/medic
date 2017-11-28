@@ -117,6 +117,7 @@ const status = {
 };
 
 const rEditURL = /^https:\/\/medium\.com\/p\/([\w\d]+)\/edit$/;
+const cookiesJSON = "cookies.json";
 
 const wait = (msec: number): Promise<void> =>
   new Promise((resolve, reject) => {
@@ -167,11 +168,11 @@ const getCookies = (): Promise<Array<Cookie>> =>
   new Promise(async (resolve, reject) => {
     let cookies;
     try {
-      const data = await readFile("cookies.json");
+      const data = await readFile(cookiesJSON);
       cookies = JSON.parse(data);
     } catch (err) {
       cookies = await login();
-      await writeFile("cookies.json", JSON.stringify(cookies));
+      await writeFile(cookiesJSON, JSON.stringify(cookies));
     }
     resolve(cookies);
   });
@@ -289,6 +290,7 @@ const createPost = (client: Client, html: string): Promise<string> =>
     await shortcut(page, "s");
     const matched = await waitForPushed(page, rEditURL);
     await page.close();
+    await wait(1000);
     resolve(matched[1]);
   });
 
@@ -341,6 +343,7 @@ const updatePost = (
     await shortcut(page, "v");
     await shortcut(page, "s");
     await page.close();
+    await wait(1000);
     resolve();
   });
 
@@ -384,6 +387,8 @@ const destroyPost = (client: Client, postId: string): Promise<void> =>
 const close = (client: Client): Promise<void> => client.browser.close();
 
 module.exports = {
+  cookiesJSON,
+  getCookies,
   createClient,
   createPost,
   readPost,

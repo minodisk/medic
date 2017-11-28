@@ -1,7 +1,7 @@
 {
   "name": "@minodisk/medkit",
   "version": "0.0.0",
-  "description": "Medium SDK supports CRUD post(s) for Node",
+  "description": "Medium SDK supports CRUD post for Node",
   "main": "lib/index.js",
   "repository": "git@github.com:minodisk/medic.git",
   "author": "Daisuke Mino <daisuke.mino@gmail.com>",
