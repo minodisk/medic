@@ -1,0 +1,23 @@
+{
+  "name": "@minodisk/medic",
+  "version": "0.0.0",
+  "description": "CLI for Medium",
+  "main": "lib/index.js",
+  "repository": "git@github.com:minodisk/medic.git",
+  "author": "Daisuke Mino <daisuke.mino@gmail.com>",
+  "license": "MIT",
+  "scripts": {
+    "build": "yarn run babel -d lib/ src/",
+    "test": "yarn run jest",
+    "format": "yarn run prettier *.json *.md src/*.js lib/*.js -- --write",
+    "prepublish": "yarn run build && yarn run format"
+  },
+  "devDependencies": {
+    "babel-cli": "^6.26.0",
+    "babel-preset-flow": "^6.23.0",
+    "cheerio": "^1.0.0-rc.2",
+    "flow-bin": "^0.59.0",
+    "jest": "^21.2.1",
+    "prettier": "^1.8.2"
+  }
+}
