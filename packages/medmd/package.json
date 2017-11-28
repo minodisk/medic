@@ -12,6 +12,14 @@
     "format": "yarn run prettier *.json *.md src/*.js lib/*.js -- --write",
     "prepublish": "yarn run build && yarn run format"
   },
+  "dependencies": {
+    "rehype-parse": "^4.0.0",
+    "rehype-remark": "^2.1.0",
+    "remark-html": "^6.0.1",
+    "remark-parse": "^4.0.0",
+    "remark-stringify": "^4.0.0",
+    "unified": "^6.1.6"
+  },
   "devDependencies": {
     "babel-cli": "^6.26.0",
     "babel-preset-flow": "^6.23.0",
