@@ -30,7 +30,6 @@ describe('CRUD post', () => {
   });
 
   afterAll(async () => {
-    console.log('afterAll');
     await client.close();
   });
 
