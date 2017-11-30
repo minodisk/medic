@@ -7,7 +7,6 @@ const {
   updatePost,
   destroyPost,
   close,
-  wait,
 } = require('../src/index');
 const cheerio = require('cheerio');
 const fs = require('fs');
@@ -31,14 +30,21 @@ test.skip('cookies', async () => {
   }
 });
 
-test('CRUD post', async () => {
-  const client = await createClient();
+describe('CRUD post', () => {
   let postId;
+  let client;
 
-  expect.assertions(7);
+  beforeAll(async () => {
+    client = await createClient();
+  });
 
-  {
-    // Test createPost() and readPost()
+  afterAll(async () => {
+    await close(client);
+  });
+
+  it(`create and read`, async () => {
+    expect.assertions(3);
+
     const title = 'Test for mediumn.createPost()';
     const subtitle = `Testing at ${new Date().getTime()}`;
     const text = 'Is post created?';
@@ -48,17 +54,20 @@ test('CRUD post', async () => {
       `<h3>${title}</h3><h4>${subtitle}</h4><p>${text}</p>`,
     );
 
-    await wait(1000);
-
     const html = await readPost(client, postId);
     const $ = cheerio.load(`<div>${html}</div>`);
-    expect($('h3').text()).toBe(title);
-    expect($('h4').text()).toBe(subtitle);
+    expect($('h1').text() || $('h3').text()).toBe(title);
+    expect($('h2').text() || $('h4').text()).toBe(subtitle);
     expect($('p').text()).toBe(text);
-  }
+  });
 
-  {
-    // Test updatePost() and readPost()
+  it('created', () => {
+    expect(postId).not.toBeUndefined();
+  });
+
+  it(`update and read`, async () => {
+    expect.assertions(3);
+
     const title = 'Test for mediumn.updatePost()';
     const subtitle = `Testing at ${new Date().getTime()}`;
     const text = 'Is post updated?';
@@ -69,24 +78,17 @@ test('CRUD post', async () => {
       `<h3>${title}</h3><h4>${subtitle}</h4><p>${text}</p>`,
     );
 
-    await wait(1000);
-
     const html = await readPost(client, postId);
     const $ = cheerio.load(`<div>${html}</div>`);
-    expect($('h3').text()).toBe(title);
-    expect($('h4').text()).toBe(subtitle);
+    expect($('h1').text() || $('h3').text()).toBe(title);
+    expect($('h2').text() || $('h4').text()).toBe(subtitle);
     expect($('p').text()).toBe(text);
-  }
+  });
 
-  {
-    // Test destroyPost()
+  it(`destroy`, async () => {
+    expect.assertions(1);
+
     await destroyPost(client, postId);
-    try {
-      await readPost(client, postId);
-    } catch (err) {
-      expect(err).toBe('410 Gone');
-    }
-  }
-
-  close(client);
+    await expect(readPost(client, postId)).rejects.toMatch('410 Gone');
+  });
 });
