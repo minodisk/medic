@@ -1,13 +1,7 @@
 // @flow
 
 const {md2html, html2md} = require('@minodisk/medmd');
-const {
-  createClient,
-  createPost,
-  readPost,
-  updatePost,
-  destroyPost,
-} = require('@minodisk/medkit');
+const Client = require('@minodisk/medkit');
 
 const ready = (() => {
   let client;

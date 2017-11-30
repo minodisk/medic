@@ -1,13 +1,13 @@
 // @flow
 
-import type {Page, ClipboardEvent} from './types';
+import type { Page, ClipboardEvent } from "./types";
 
 const enhance = {
   shortcut: function(key: string): Promise<void> {
     return new Promise(async (resolve, reject) => {
-      await this.keyboard.down('Control');
-      await this.keyboard.press(key, {delay: 100});
-      await this.keyboard.up('Control');
+      await this.keyboard.down("Control");
+      await this.keyboard.press(key, { delay: 100 });
+      await this.keyboard.up("Control");
       resolve();
     });
   },
@@ -20,12 +20,12 @@ const enhance = {
             e.preventDefault();
             e.clipboardData.setData(t, d);
           };
-          (document: any).addEventListener('copy', onCopy);
+          (document: any).addEventListener("copy", onCopy);
         },
         type,
-        data,
+        data
       );
-      await this.shortcut('c');
+      await this.shortcut("c");
       resolve();
     });
   },
@@ -55,7 +55,7 @@ const enhance = {
         }, timeout);
       }
     });
-  },
+  }
 };
 
 module.exports = function(page: any): Page {

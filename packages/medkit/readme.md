@@ -14,7 +14,8 @@ I think Medium's editor is an elegant WYSIWYG editor. But, I would like to write
 technical posts in another editor and manage version of the posts in Git etc.
 When trying to do it, it can not be realized with the
 [Medium's official API](https://github.com/Medium/medium-api-docs). Because it
-only supports create, it does not support read, update and destroy.
+only supports creating post, it does not support reading, updating and
+destroying post.
 
 ## Installation
 
@@ -33,60 +34,65 @@ yarn add @minodisk/medkit
 ## Usage
 
 ```js
-import {
-  createClient,
-  createPost,
-  readPost,
-  updatePost,
-  destroyPost
-} from "@minodisk/medkit";
+import Client from "@minodisk/medkit";
 
 (async () => {
-  const client = await createClient();
-  const postId = await createPost(
-    client,
+  const client = new Client();
+  await client.ready("cookies.json");
+  const postId = await client.createPost(
     "<h3>Title</h3><h4>Subtitle</h4><p>Text</p>"
   );
-  const html = await readPost(client, postId); // -> '<h3>Title</h3><h4>Subtitle</h4><p>Text</p>'
-  await updatePost(
-    client,
+  const html = await client.readPost(postId); // ->  '<h1>Title</h1><h2>Subtitle</h2><p>Text</p>' or '<h3>Title</h3><h4>Subtitle</h4><p>Text</p>'
+  await client.updatePost(
     postId,
     "<h3>Title</h3><h4>Subtitle</h4><p>Modified</p>"
   );
-  await destroyPost(client, postId);
+  await client.destroyPost(postId);
+  await client.close();
 })();
 ```
 
 ## API
 
-### `createClient(): Promise<Client>`
+### `new Client(): Client`
 
-`createClient` returns a `Promise`. The `Promise` receives a `client` contains
-`puppeteer.Browser` and `cookies` when it completes normally.
+`new Client()` returns `Client`.
 
-### `createPost(client: Client, html: string): Promise<string>`
+#### `Client.prototype.ready(cookiesPath: string): Promise<void>`
 
-`createPost` creates a `html` post on the specified `client` and returns a
-`Promise`. The `Promise` receives a post ID when it completes normally.
+`ready` opens Chromium and tries to read the cookie file in `cookiesPath`. If
+there is no cookie file in `cookiesPath`, open a login screen to Medium and ask
+the user to login. After successful login, save the cookie file in `cookiesPath`
+and complete returned `Promise`.
 
-### `readPost(client: Client, postId: string): Promise<string>`
+#### `Client.prototype.createPost(html: string): Promise<string>`
 
-`readPost` read a post with ID `postId` on the `client` and returns a `Promise`.
-The `Promise` receives a post formatted with HTML.
+`createPost` opens Medium's new story screen and pastes the passed `html` in the
+post field. When saving the post is completed, returned `Promise` will pass the
+post ID to the next step and complete.
 
-### `updatePost(client: Client, postId: string, html: string): Promise<void>`
+#### `Client.prototype.readPost(postId: string): Promise<string>`
 
-`updatePost` updates the post whose ID is `postId` to `html` on the `client` and
-returns a `Promise`.
+`readPost` opens Medium's edit screen with post ID `postId` and gets the HTML in
+post filed. When getting the post HTML is completed, returned `Promise` will
+pass that HTML to the next step and complete.
 
-### `destroyPost(client: Client, postId: string): Promise<void>`
+#### `Client.prototype.updatePost(postId: string, html: string): Promise<void>`
 
-`destroyPost` destroys the post whose ID is `postId` on the `client` and returns
-a `Promise`.
+`updatePost` opens Medium's edit story screen with post ID `postId` and pastes
+the passed `html` in the post field. When saving the post is completed, returned
+`Promise` will complete.
 
-### `close(client: Client): Promise<void>`
+#### `Client.prototype.destroyPost(postId: string): Promise<void>`
 
-`close` closes the `client`.
+`destroyPost` opens Medium's edit story screen with post ID`postId` and clicks
+delete button. When deleting the post is completed, returned `Promise` will
+complete.
+
+#### `Client.prototype.close(): Promise<void>`
+
+`close` closes Chromium. When closing Chromium is completed, returned `Promise`
+will complete.
 
 ## FAQ
 
