@@ -42,7 +42,7 @@ import Client from "@minodisk/medkit";
   const postId = await client.createPost(
     "<h3>Title</h3><h4>Subtitle</h4><p>Text</p>"
   );
-  const html = await client.readPost(postId); // ->  '<h1>Title</h1><h2>Subtitle</h2><p>Text</p>' or '<h3>Title</h3><h4>Subtitle</h4><p>Text</p>'
+  const html = await client.readPost(postId); // ->  "<h1>Title</h1><h2>Subtitle</h2><p>Text</p>" or "<h3>Title</h3><h4>Subtitle</h4><p>Text</p>"
   await client.updatePost(
     postId,
     "<h3>Title</h3><h4>Subtitle</h4><p>Modified</p>"
