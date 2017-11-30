@@ -7,10 +7,10 @@
   "author": "Daisuke Mino <daisuke.mino@gmail.com>",
   "license": "MIT",
   "scripts": {
-    "build": "yarn run babel -d lib/ src/",
-    "test": "yarn run jest",
-    "format": "yarn run prettier *.json *.md src/*.js lib/*.js -- --write",
-    "prepublish": "yarn run build && yarn run format"
+    "build": "rm -rf lib/ && yarn babel -d lib/ src/",
+    "test": "yarn jest",
+    "format": "yarn prettier *.json *.md src/*.js lib/*.js -- --write",
+    "prepublish": "yarn build && yarn format"
   },
   "dependencies": {
     "puppeteer": "^0.13.0"
