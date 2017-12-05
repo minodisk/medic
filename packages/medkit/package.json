@@ -1,6 +1,6 @@
 {
   "name": "@minodisk/medkit",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Manipulate your posts in Medium",
   "main": "lib/index.js",
   "repository": "git@github.com:minodisk/medic.git",
