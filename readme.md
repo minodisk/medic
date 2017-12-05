@@ -1,6 +1,6 @@
 # Medic
 
-A tool for converting markdown to HTML, posting it to Medium, and updating it.
+Tool for manipulating Medium posts with markdown files.
 
 ## Motivation
 
@@ -19,7 +19,7 @@ destroying.
 $ npm install -g @minodisk/medic
 ```
 
-### Step 2. Create a markdown file.
+### Step 2. Create a markdown file
 
 getting-started.md:
 
@@ -29,7 +29,7 @@ getting-started.md:
 This post is created with [medic](https://github.com/minodisk/medic).
 ```
 
-### Step 3. Sync
+### Step 3. Sync to Medium
 
 ```sh
 $ medic sync getting-started.md
@@ -54,8 +54,14 @@ tags:
 This post is updated with [medic](https://github.com/minodisk/medic).
 ```
 
+### Step 5. Sync to Medium
+
+```sh
+$ medic sync getting-started.md
+```
+
 ## And More
 
-- [@minodisk/medic](packages/medic): Medium CLI supports CRUD posts via markdown file.
-- [@minodisk/medkit](packages/medkit): Medium SDK supports CRUD posts.
-- [@minodisk/medmd](packages/medmd): Medium transformer between HTML and markdown.
+- [@minodisk/medic](packages/medic): CLI manipulates Medium posts with markdown files.
+- [@minodisk/medkit](packages/medkit): SDK manipulates Medium posts.
+- [@minodisk/medmd](packages/medmd): Converter markdown to HTML for Medium.

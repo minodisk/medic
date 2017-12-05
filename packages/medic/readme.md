@@ -1,6 +1,6 @@
 # @minodisk/medic
 
-CLI manipulates your posts with markdown files.
+CLI manipulates Medium posts with markdown files.
 
 ## Installation
 

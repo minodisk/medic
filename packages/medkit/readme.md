@@ -1,6 +1,6 @@
 # @minodisk/medkit
 
-SDK manipulates your posts in Medium.
+SDK manipulates Medium posts.
 
 ## Installation
 
