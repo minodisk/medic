@@ -1,5 +1,9 @@
 {
   "private": true,
   "name": "medic",
-  "workspaces": ["packages/*"]
+  "workspaces": ["packages/*"],
+  "scripts": {
+    "build": "dir=$(pwd) && cd ${dir}/packages/medic && yarn build && cd ${dir}/packages/medkit && yarn build && cd ${dir}/packages/medmd && yarn build || cd $dir",
+    "test": "dir=$(pwd) && cd ${dir}/packages/medic && yarn test && cd ${dir}/packages/medkit && yarn test && cd ${dir}/packages/medmd && yarn test || cd $dir"
+  }
 }
