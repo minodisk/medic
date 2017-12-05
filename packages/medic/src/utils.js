@@ -1,92 +1,34 @@
 // @flow
 
-const yaml = require('js-yaml');
+const fs = require("fs");
+const glob = require("glob");
 
-type Header = {
-  id?: string,
-  tags?: Array<string>,
-};
-
-type Post = {
-  header: Header,
-  body: string,
-};
-
-const isValidHeader = (header: Header): boolean => {
-  if (
-    header == null ||
-    typeof header !== 'object' ||
-    Object.prototype.toString.call(header) !== '[object Object]'
-  ) {
-    return false;
-  }
-  const keys = Object.keys(header);
-  for (const k of ['id', 'tags']) {
-    if (keys.includes(k)) {
-      return true;
-    }
-  }
-  return false;
-};
-
-const toPost = (text: string): Post => {
-  const lines = text.split(/\r?\n/);
-  if (lines.length === 0) {
-    return {header: {}, body: text};
-  }
-  const firstLine = lines[0];
-  if (firstLine !== '---') {
-    return {header: {}, body: text};
-  }
-
-  const headerLines = [];
-  const len = lines.length;
-  let found = false;
-  let i = 1;
-  for (; i < len; i++) {
-    const line = lines[i];
-    if (line === '---') {
-      found = true;
-      break;
-    }
-    headerLines.push(line);
-  }
-  if (!found) {
-    return {header: {}, body: text};
-  }
-
-  const headerText = headerLines.join('\n');
-  const header = yaml.load(headerText);
-  if (!isValidHeader(header)) {
-    return {header: {}, body: text};
-  }
-
-  const restLines = [];
-  let checkEmpty = true;
-  for (let j = i + 1; j < len; j++) {
-    const line = lines[j];
-    if (checkEmpty) {
-      if (line === '') {
-        continue;
+exports.readFile = (path: string): Promise<string> =>
+  new Promise((resolve, reject) => {
+    fs.readFile(path, (err, text) => {
+      if (err != null) {
+        return reject(err);
       }
-      checkEmpty = false;
-    }
-    restLines.push(line);
-  }
-  return {header, body: restLines.join('\n')};
-};
+      resolve(text.toString());
+    });
+  });
 
-const toText = (post: Post): string => {
-  const {header, body} = post;
-  if (!isValidHeader(header)) {
-    return body;
-  }
-  const h = yaml.safeDump(header);
-  return `---
-${h}---
+exports.writeFile = (path: string, data: string): Promise<void> =>
+  new Promise((resolve, reject) => {
+    fs.writeFile(path, data, err => {
+      if (err != null) {
+        return reject(err);
+      }
+      resolve();
+    });
+  });
 
-${body}
-`;
-};
-
-module.exports = {toPost, toText};
+exports.glob = (pattern: string): Promise<Array<string>> =>
+  new Promise((resolve, reject) => {
+    glob(pattern, (err, files) => {
+      if (err != null) {
+        return reject(err);
+      }
+      resolve(files);
+    });
+  });

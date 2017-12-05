@@ -48,6 +48,16 @@ exports.wait = (msec: number): Promise<void> =>
     setTimeout(resolve, msec);
   });
 
+exports.stat = (path: string): Promise<any> =>
+  new Promise((resolve, reject) => {
+    fs.stat(path, (err, stats) => {
+      if (err != null) {
+        return reject(err);
+      }
+      resolve(stats);
+    });
+  });
+
 exports.readFile = (path: string): Promise<string> =>
   new Promise((resolve, reject) => {
     fs.readFile(path, (err, text) => {

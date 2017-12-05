@@ -9,6 +9,21 @@ const mdast2md = require("remark-stringify");
 
 const transformMDAST = options => {
   return (tree, file) => {
+    for (const node of tree.children) {
+      switch (node.type) {
+        case "blockquote":
+          const children = [];
+          for (const n of node.children) {
+            if (n.type === "paragraph") {
+              children.push(...n.children);
+            } else {
+              children.push(n);
+            }
+          }
+          node.children = children;
+          break;
+      }
+    }
     const c0 = tree.children[0];
     if (c0.type !== "heading" || c0.depth !== 1) {
       return;

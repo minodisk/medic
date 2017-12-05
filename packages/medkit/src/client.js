@@ -1,27 +1,28 @@
 // @flow
 
+const url = require("url");
+const qs = require("querystring");
 const puppeteer = require("puppeteer");
-const { wait, readFile, writeFile, statusText } = require("./utils");
+const { wait, stat, readFile, writeFile, statusText } = require("./utils");
 const patchToPage = require("./page");
 import type { Browser, Page, Cookie, PostOptions } from "./types";
 
 const rEditURL = /^https:\/\/medium\.com\/p\/([\w\d]+)\/edit$/;
 
+type Options = {
+  cookiesPath?: string
+};
+
 class Client {
+  options: Options;
   browser: Browser;
   cookies: Array<Cookie>;
 
-  ready(cookiesPath: string): Promise<void> {
-    return new Promise(async (resolve, reject) => {
-      try {
-        const data = await readFile(cookiesPath);
-        this.cookies = JSON.parse(data);
-      } catch (err) {
-        this.cookies = await this.login();
-        await writeFile(cookiesPath, JSON.stringify(this.cookies));
-      }
-      resolve();
-    });
+  constructor(options?: Options) {
+    this.options = {
+      cookiesPath: "cookies.json",
+      ...options
+    };
   }
 
   open(): Promise<void> {
@@ -55,6 +56,13 @@ class Client {
         width: 1000,
         height: 1000
       });
+      if (this.cookies == null) {
+        try {
+          await stat(this.options.cookiesPath);
+          const content = await readFile(this.options.cookiesPath);
+          this.cookies = JSON.parse(content);
+        } catch (err) {}
+      }
       if (this.cookies != null) {
         await page.setCookie(...this.cookies);
       }
@@ -62,18 +70,39 @@ class Client {
     });
   }
 
-  login(): Promise<Array<Cookie>> {
+  waitForLogin(page: Page, redirect: string): Promise<void> {
     return new Promise(async (resolve, reject) => {
-      const page = await this.newPage();
-      await page.goto("https://medium.com/m/signin", { timeout: 0 });
+      let loggingIn = false;
       const onChanged = async e => {
-        if (e._url !== "https://medium.com/") {
-          return;
+        try {
+          if (!loggingIn) {
+            const u = url.parse(e._url);
+            if (u.query != null) {
+              const q = qs.parse(u.query);
+              if (
+                u.host === "medium.com" &&
+                u.pathname === "/m/signin" &&
+                q.redirect === redirect
+              ) {
+                loggingIn = true;
+                return;
+              }
+            }
+          }
+          if (e._url === redirect) {
+            page.removeListener("framenavigated", (onChanged: any));
+            if (loggingIn) {
+              this.cookies = await page.cookies();
+              await writeFile(
+                this.options.cookiesPath,
+                JSON.stringify(this.cookies)
+              );
+            }
+            resolve();
+          }
+        } catch (err) {
+          reject(err);
         }
-        page.removeListener("framenavigated", (onChanged: any));
-        const cookies = await page.cookies();
-        await page.close();
-        resolve(cookies);
       };
       page.on("framenavigated", (onChanged: any));
     });
@@ -82,11 +111,12 @@ class Client {
   createPost(html: string, options?: PostOptions): Promise<string> {
     return new Promise(async (resolve, reject) => {
       const page = await this.newPage();
-      await this.gotoAndPaste(page, "https://medium.com/new-story", html);
-      if (options != null) {
-        await this.updatePostOptions(page, options);
-      }
-      await this.savePost(page);
+      await this.gotoAndPaste(
+        page,
+        "https://medium.com/new-story",
+        html,
+        options
+      );
       const matched = await page.waitForPushed(rEditURL);
       await page.close();
       resolve(matched[1]);
@@ -103,61 +133,165 @@ class Client {
       await this.gotoAndPaste(
         page,
         `https://medium.com/p/${postId}/edit`,
-        html
+        html,
+        options
       );
-      if (options != null) {
-        await this.updatePostOptions(page, options);
-      }
-      await this.savePost(page);
       await page.close();
       resolve();
     });
   }
 
-  gotoAndPaste(page: Page, url: string, html: string): Promise<void> {
+  gotoAndPaste(
+    page: Page,
+    url: string,
+    html: string,
+    options?: PostOptions
+  ): Promise<void> {
     return new Promise(async (resolve, reject) => {
       await page.setDataToClipboard("text/html", html);
-      await page.goto(url, { timeout: 0 });
-      await page.waitForSelector("div.section-inner");
-      await wait(1000);
+      await page.goto(url, {
+        timeout: 0
+      });
+      console.log("wait for login");
+      await this.waitForLogin(page, url);
+      console.log("wait for loading");
+      await this.waitForLoadingApp(page);
       await page.focus("div.section-inner");
       await page.shortcut("a");
       await page.shortcut("v");
+      await page.shortcut("s");
+      await this.waitForRequest(page, 10000, {
+        rePathname: /^\/p\/[\dabcdef]+\/deltas$/
+      });
+      if (options != null && Object.keys(options).length > 0) {
+        await this.updatePostOptions(page, options);
+      }
       resolve();
+    });
+  }
+
+  waitForLoadingApp(page: Page): Promise<void> {
+    return new Promise(async (resolve, reject) => {
+      try {
+        await wait(1000);
+        console.log("wait for medium's scripts");
+        for (;;) {
+          const existsMDM = await page.evaluate(() => window._mdm != null);
+          console.log("  scripts exists:", existsMDM);
+          if (existsMDM) {
+            break;
+          }
+          await wait(500);
+        }
+        console.log("wait for loading medium's app");
+        for (;;) {
+          const isLoading = (await page.$("body.is-loadingApp")) != null;
+          console.log("  loading:", isLoading);
+          if (!isLoading) {
+            break;
+          }
+          await wait(500);
+        }
+        resolve();
+      } catch (err) {
+        console.log("  loading error:", err);
+        reject(err);
+      }
     });
   }
 
   updatePostOptions(page: Page, options: PostOptions): Promise<void> {
     return new Promise(async (resolve, reject) => {
+      console.log("open post options");
       await this.openPostOptions(page);
       {
         try {
-          const selector = 'button[data-action="remove-token"]';
-          await page.waitForSelector(selector, { timeout: 100 });
-          const buttons = await page.$$(selector);
-          for (const button of buttons) {
-            await button.click();
+          const selector = "div.js-tagToken";
+          await page.waitForSelector(selector, { timeout: 1000 });
+          await wait(1000);
+          const tags = await page.$$(selector);
+          if (tags.length > 0) {
+            console.log("remove tags:", tags.length);
+            const updated = this.waitForRequest(page, 1000, {
+              rePathname: /^\/_\/api\/posts\/[\dabcdef]+\/tags$/
+            });
+            for (const tag of tags) {
+              const button = await tag.$('button[data-action="remove-token"]');
+              await button.click();
+            }
+            await updated;
           }
-        } catch (err) {}
+        } catch (err) {
+          console.log("fail to remeove tag:", err);
+        }
       }
       if (options.tags != null && options.tags.length > 0) {
         const { tags } = options;
-        const selector = "p.graf--p";
+        const selector = "div.js-tagInput span";
         await page.waitForSelector(selector);
+        await wait(1000);
+        console.log("add tags");
+        const updated = this.waitForRequest(page, 1000, {
+          rePathname: /^\/_\/api\/posts\/[\dabcdef]+\/tags$/
+        });
+        await page.focus(selector);
         for (const tag of tags) {
-          await wait(100);
+          console.log("  add tag:", tag);
           await page.type(selector, `${tag},`);
         }
+        await updated;
       }
       resolve();
     });
   }
 
-  savePost(page: Page): Promise<void> {
+  waitForRequest(
+    page: Page,
+    timeout: number,
+    matcher: {
+      method?: string,
+      host?: string,
+      rePathname: RegExp
+    }
+  ): Promise<void> {
+    const { method, host, rePathname } = {
+      method: "POST",
+      host: "medium.com",
+      ...matcher
+    };
+
     return new Promise(async (resolve, reject) => {
-      await page.shortcut("s");
-      await wait(3000);
-      resolve();
+      console.log("wait for request:", method, host, rePathname);
+      let timeoutId = setTimeout(async () => {
+        await page.setRequestInterception(false);
+        page.removeListener("request", (onRequested: any));
+        resolve();
+      }, timeout);
+      const onRequested = async req => {
+        req.continue();
+        try {
+          const u = url.parse(req.url);
+          const matched =
+            req.method === method &&
+            u.host === host &&
+            rePathname.test(String(u.pathname));
+          console.log("  requested:", req.method, u.host, u.pathname, matched);
+          if (matched) {
+            clearTimeout(timeoutId);
+            timeoutId = setTimeout(async () => {
+              await page.setRequestInterception(false);
+              page.removeListener("request", (onRequested: any));
+              resolve();
+            }, timeout);
+          }
+        } catch (err) {
+          await page.setRequestInterception(false);
+          page.removeListener("request", (onRequested: any));
+          reject(err);
+        }
+      };
+      await page.setRequestInterception(true);
+      page.on("request", (onRequested: any));
     });
   }
 
@@ -209,7 +343,10 @@ class Client {
         });
       };
       page.on("response", (onResponse: any));
-      await page.goto(`https://medium.com/p/${postId}/edit`, { timeout: 0 });
+
+      const url = `https://medium.com/p/${postId}/edit`;
+      await page.goto(url, { timeout: 0 });
+      await this.waitForLogin(page, url);
       await page.waitForNavigation({ timeout: 0, waitUntil: "load" });
       await page.waitForSelector("div.section-inner");
       const html = await page.$eval("div.section-inner", el => {
@@ -224,7 +361,9 @@ class Client {
   destroyPost(postId: string): Promise<void> {
     return new Promise(async (resolve, reject) => {
       const page = await this.newPage();
-      await page.goto(`https://medium.com/p/${postId}/edit`, { timeout: 0 });
+      const url = `https://medium.com/p/${postId}/edit`;
+      await page.goto(url, { timeout: 0 });
+      await this.waitForLogin(page, url);
       {
         await page.waitForSelector(
           'button[data-action="show-post-actions-popover"]'

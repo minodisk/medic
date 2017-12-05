@@ -1,21 +1,6 @@
 # @minodisk/medkit
 
-Medium SDK supports CRUD post(s) for Node.
-
-## Feature
-
-Instead of simply typing in text, it is implemented to write HTML via clipboard.
-In other words, you can create, read, update and destroy posts marked up with
-some tags permitted by Medium.
-
-## Motivation
-
-I think Medium's editor is an elegant WYSIWYG editor. But, I would like to write
-technical posts in another editor and manage version of the posts in Git etc.
-When trying to do it, it can not be realized with the
-[Medium's official API](https://github.com/Medium/medium-api-docs). Because it
-only supports creating post, it does not support reading, updating and
-destroying post.
+SDK manipulates your posts in Medium.
 
 ## Installation
 
@@ -38,7 +23,6 @@ import Client from "@minodisk/medkit";
 
 (async () => {
   const client = new Client();
-  await client.ready("cookies.json");
   const postId = await client.createPost(
     "<h3>Title</h3><h4>Subtitle</h4><p>Text</p>"
   );
@@ -54,16 +38,10 @@ import Client from "@minodisk/medkit";
 
 ## API
 
-### `new Client(): Client`
+### `new Client(options?: {cookiesPath?: string}): Client`
 
-`new Client()` returns `Client`.
-
-#### `Client.prototype.ready(cookiesPath: string): Promise<void>`
-
-`ready` opens Chromium and tries to read the cookie file in `cookiesPath`. If
-there is no cookie file in `cookiesPath`, open a login screen to Medium and ask
-the user to login. After successful login, save the cookie file in `cookiesPath`
-and complete returned `Promise`.
+`new Client()` returns `Client`. `cookiesPath` in `options` is `"cookies.json"`
+in default.
 
 #### `Client.prototype.createPost(html: string): Promise<string>`
 

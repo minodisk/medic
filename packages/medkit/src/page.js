@@ -1,6 +1,6 @@
 // @flow
 
-import type { Page, ClipboardEvent } from "./types";
+import type { Page, ClipboardEvent, Cookie } from "./types";
 
 const enhance = {
   shortcut: function(key: string): Promise<void> {

@@ -33,6 +33,7 @@ export type Page = {
   close(): Promise<void>,
   on(type: string, (e: any) => void): void,
   removeListener(type: string, (e: any) => void): void,
+  setRequestInterception(value: boolean): void,
   type(
     selector: string,
     text: string,
@@ -41,7 +42,8 @@ export type Page = {
   // Patched
   shortcut(key: string): Promise<void>,
   setDataToClipboard(type: string, data: string): Promise<void>,
-  waitForPushed(re: RegExp, timeout?: number): Promise<Array<string>>
+  waitForPushed(re: RegExp, timeout?: number): Promise<Array<string>>,
+  waitForLogin(target: string): Promise<Array<Cookie> | void>
 };
 
 export type ElementHandle = {

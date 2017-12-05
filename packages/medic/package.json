@@ -1,22 +1,35 @@
 {
   "name": "@minodisk/medic",
   "version": "0.0.0",
-  "description": "CLI for Medium",
+  "description": "Medium CLI supports CRUD posts via markdown file",
   "main": "lib/index.js",
+  "bin": {
+    "medic": "lib/command.js"
+  },
   "repository": "git@github.com:minodisk/medic.git",
   "author": "Daisuke Mino <daisuke.mino@gmail.com>",
   "license": "MIT",
   "scripts": {
-    "build": "yarn run babel -d lib/ src/",
-    "test": "yarn run jest",
-    "format": "yarn run prettier *.json *.md src/*.js lib/*.js -- --write",
-    "prepublish": "yarn run build && yarn run format"
+    "build":
+      "rm -rf lib/ && yarn flow-remove-types -d lib/ src/ && yarn format",
+    "test": "yarn jest",
+    "format": "yarn prettier --write *.json *.md src/*.js lib/*.js",
+    "prepublish": "yarn build"
+  },
+  "jest": {
+    "transform": {
+      "\\.js$": "../../bin/jest-transform"
+    }
+  },
+  "dependencies": {
+    "commander": "^2.12.2",
+    "glob": "^7.1.2",
+    "js-yaml": "^3.10.0"
   },
   "devDependencies": {
-    "babel-cli": "^6.26.0",
-    "babel-preset-flow": "^6.23.0",
     "cheerio": "^1.0.0-rc.2",
     "flow-bin": "^0.59.0",
+    "flow-remove-types": "^1.2.3",
     "jest": "^21.2.1",
     "prettier": "^1.8.2"
   }

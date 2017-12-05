@@ -1,6 +1,7 @@
 // @flow
 
 require('jest');
+import type {describe, it, expect} from 'jest';
 const {md2html, html2md} = require('../src/index');
 
 describe('md2html', () => {

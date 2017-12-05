@@ -1,6 +1,6 @@
 # @minodisk/medmd
 
-Transform between Medium's HTML and markdown. `#` at the beginning of the markdown and `##` are interpreted as Medium article title and subtitle.
+Converter converts markdown to HTML for Medium.
 
 ## API
 
@@ -11,3 +11,18 @@ Transform between Medium's HTML and markdown. `#` at the beginning of the markdo
 ### `html2md(html: string): Promise<string>`
 
 `html2md` transform `html` to markdown.
+
+## Supported Markdown Format
+
+* Block Elements
+  * [x] Paragraphs and Line Breaks
+  * [x] Headers
+  * [x] Horizontal Rules
+  * [x] Blockquotes
+  * [x] Lists
+  * [x] Code Block
+* Inline
+  * [x] Links
+  * [x] Emphasis
+  * [x] Code
+  * [x] Images
