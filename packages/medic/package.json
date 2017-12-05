@@ -1,6 +1,6 @@
 {
   "name": "@minodisk/medic",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Medium CLI supports CRUD posts via markdown file",
   "main": "lib/index.js",
   "bin": {
