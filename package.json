@@ -5,6 +5,6 @@
   "scripts": {
     "build": "yarn workspace @minodisk/medic build && yarn workspace @minodisk/medkit build && yarn workspace @minodisk/medmd build",
     "test": "yarn workspace @minodisk/medic test && yarn workspace @minodisk/medkit test && yarn workspace @minodisk/medmd test",
-    "publish": "yarn workspace @minodisk/medic publish && yarn workspace @minodisk/medkit publish && yarn workspace @minodisk/medmd publish"
+    "publishall": "yarn workspace @minodisk/medic publish -- --access=public --no-git-tag-version && yarn workspace @minodisk/medkit publish -- --access=public --no-git-tag-version && yarn workspace @minodisk/medmd publish -- --access=public"
   }
 }
