@@ -3,7 +3,8 @@
   "name": "medic",
   "workspaces": ["packages/*"],
   "scripts": {
-    "build": "dir=$(pwd) && cd ${dir}/packages/medic && yarn build && cd ${dir}/packages/medkit && yarn build && cd ${dir}/packages/medmd && yarn build || cd $dir",
-    "test": "dir=$(pwd) && cd ${dir}/packages/medic && yarn test && cd ${dir}/packages/medkit && yarn test && cd ${dir}/packages/medmd && yarn test || cd $dir"
+    "build": "yarn workspace @minodisk/medic build && yarn workspace @minodisk/medkit build && yarn workspace @minodisk/medmd build",
+    "test": "yarn workspace @minodisk/medic test && yarn workspace @minodisk/medkit test && yarn workspace @minodisk/medmd test",
+    "publish": "yarn workspace @minodisk/medic publish && yarn workspace @minodisk/medkit publish && yarn workspace @minodisk/medmd publish"
   }
 }
