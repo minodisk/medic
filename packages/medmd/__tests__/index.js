@@ -2,6 +2,7 @@
 
 require('jest');
 import type {describe, it, expect} from 'jest';
+const vfile = require('vfile');
 const {md2html, html2md} = require('../src/index');
 
 describe('md2html', () => {
@@ -23,6 +24,61 @@ Text
 <p>Text</p>
 `);
   });
+
+  describe('figure', () => {
+    it('1 image', async () => {
+      const html = await md2html(
+        vfile({
+          path: __filename,
+          contents: `![Red](fixtures/red.png)`,
+        }),
+      );
+      expect(html).toBe(
+        `<figure><img src="fixtures/red.png" alt="Red"><figcaption>Red</figcaption></figure>
+`,
+      );
+    });
+
+    it('2 images', async () => {
+      const html = await md2html(
+        vfile({
+          path: __filename,
+          contents: `![Red](fixtures/red.png) ![Green](fixtures/green.png)`,
+        }),
+      );
+      expect(html).toBe(
+        `<figure class="graf--layoutOutsetRow"><img src="fixtures/red.png" alt="Red" data-width="400" data-height="300"><figcaption>Red | Green</figcaption></figure>
+<figure class="graf--layoutOutsetRowContinue"><img src="fixtures/green.png" alt="Green" data-width="300" data-height="300"><figcaption></figcaption></figure>
+`,
+      );
+    });
+
+    it('3 images', async () => {
+      const html = await md2html(
+        vfile({
+          path: __filename,
+          contents: `![Red](fixtures/red.png) ![Green](fixtures/green.png) ![Blue](fixtures/blue.png)`,
+        }),
+      );
+      expect(html).toBe(
+        `<figure class="graf--layoutOutsetRow"><img src="fixtures/red.png" alt="Red" data-width="400" data-height="300"><figcaption>Red | Green | Blue</figcaption></figure>
+<figure class="graf--layoutOutsetRowContinue"><img src="fixtures/green.png" alt="Green" data-width="300" data-height="300"><figcaption></figcaption></figure>
+<figure class="graf--layoutOutsetRowContinue"><img src="fixtures/blue.png" alt="Blue" data-width="300" data-height="400"><figcaption></figcaption></figure>
+`,
+      );
+    });
+  });
+
+  //   describe('twitter', () => {
+  //     it('blockquote', async () => {
+  //       const html = await md2html(
+  //         `https://twitter.com/minodisk/status/922726097208446976`,
+  //       );
+  //       expect(html)
+  //         .toBe(`<blockquote class="twitter-tweet" data-lang="ja"><a href="https://twitter.com/minodisk/status/922726097208446976?ref_src=twsrc%5Etfw"></a></blockquote>
+  // `);
+  //     });
+  //   });
 });
 
 describe('html2md', () => {

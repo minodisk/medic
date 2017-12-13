@@ -159,6 +159,31 @@ class Client {
       await page.focus("div.section-inner");
       await page.shortcut("a");
       await page.shortcut("v");
+
+      console.log("embed tweets");
+      const jsHandle = await page.evaluateHandle(() => {
+        return Array.prototype.filter.call(
+          document.querySelectorAll(
+            'a.markup--anchor.markup--p-anchor[target="_blank"]'
+          ),
+          el => {
+            const text = el.innerText;
+            return /^https:\/\/twitter\.com\/.+\/status\/\d+$/.test(text);
+          }
+        );
+      });
+      const props = await jsHandle.getProperties();
+      for (const prop of props.values()) {
+        const el = prop.asElement();
+        if (el != null) {
+          const { x, y, width, height } = await el.boundingBox();
+          console.log("  at:", x + width, y + height);
+          await page.mouse.click(x + width, y + height, { delay: 100 });
+          await page.keyboard.press("Enter", { delay: 100 });
+          await page.keyboard.press("Backspace", { delay: 100 });
+        }
+      }
+
       await page.shortcut("s");
       await this.waitForRequest(page, 10000, {
         rePathname: /^\/p\/[\dabcdef]+\/deltas$/
@@ -234,6 +259,7 @@ class Client {
         const updated = this.waitForRequest(page, 1000, {
           rePathname: /^\/_\/api\/posts\/[\dabcdef]+\/tags$/
         });
+        await page.click(selector);
         await page.focus(selector);
         for (const tag of tags) {
           console.log("  add tag:", tag);
