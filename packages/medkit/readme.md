@@ -84,17 +84,3 @@ Medium's page and sometime evaluate JavaScript inside the page.
 
 When trying to operate Medium's post edit page in headless mode, some operations
 such as paste and selection are not executed properly.
-
-## Supported Functions
-
-* [x] [Write post – Medium Support](https://help.medium.com/hc/en-us/articles/225168768-Write-post)
-* [x] [Edit post – Medium Support](https://help.medium.com/hc/en-us/articles/215194537-Edit-post)
-* [x] [Delete draft – Medium Support](https://help.medium.com/hc/en-us/articles/215591007-Delete-draft)
-* [x] [Delete post – Medium Support](https://help.medium.com/hc/en-us/articles/214896058-Delete-post)
-* [ ] [Schedule to publish – Medium Support](https://help.medium.com/hc/en-us/articles/216650227-Schedule-to-publish)
-* [ ] [How do I unpublish a post? – Medium Support](https://help.medium.com/hc/en-us/articles/227056408-How-do-I-unpublish-a-post-)
-* [x] [Tags – Medium Support](https://help.medium.com/hc/en-us/articles/214741038-Tags)
-* [x] [Image captions – Medium Support](https://help.medium.com/hc/en-us/articles/115004808787-Image-captions)
-
-- [x] [Image grids – Medium Support](https://help.medium.com/hc/en-us/articles/115004808587-Image-grids)
-- [x] [Embed Tweets – Medium Support](https://help.medium.com/hc/en-us/articles/216196547-Embed-Tweets)

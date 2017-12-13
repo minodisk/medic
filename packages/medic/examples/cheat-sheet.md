@@ -10,7 +10,7 @@ tags:
 
 # Medic Cheat Sheet
 
-## Posted via [@minodisk/medic](https://github.com/minodisk/medic)
+## Posted via [@minodisk/medic](https://github.com/minodisk/medic) that is a CLI for CRUD Medium posts written in markdown.
 
 ### Block Elements
 
@@ -172,9 +172,9 @@ In Medium:
 
 ![Foo](https://cdn-images-1.medium.com/max/1000/1*hhgPm-QyG8pl2jX8bbCcCg.jpeg)![Bar](https://cdn-images-1.medium.com/max/1000/1*JOuN40_HiixiBfGANxzf-Q.jpeg)![Baz](https://cdn-images-1.medium.com/max/1000/1*BnKL8a81ex68iW_6z6sY0A.jpeg)
 
-### Embed
+### Medium specific features
 
-#### Twitter
+#### Embed tweets
 
 In markdown:
 
