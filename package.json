@@ -1,7 +1,9 @@
 {
   "private": true,
   "name": "medic",
-  "workspaces": ["packages/*"],
+  "workspaces": [
+    "packages/*"
+  ],
   "scripts": {
     "build": "yarn workspace @minodisk/medic build && yarn workspace @minodisk/medkit build && yarn workspace @minodisk/medmd build",
     "test": "yarn workspace @minodisk/medic test && yarn workspace @minodisk/medkit test && yarn workspace @minodisk/medmd test",
