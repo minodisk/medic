@@ -12,6 +12,7 @@ export type Page = {
   mouse: Mouse,
   keyboard: Keyboard,
   focus(selector: string): Promise<void>,
+  click(selector: string): Promise<void>,
   cookies(): Promise<Array<Cookie>>,
   setCookie(...cookies: Array<Cookie>): Promise<void>,
   setViewport(viewport: Viewport): Promise<void>,
@@ -29,7 +30,7 @@ export type Page = {
   evaluate<T, U>((U) => T, u: U): Promise<T>,
   evaluate<T, U, V>((U, V) => T, u: U, v: V): Promise<T>,
   evaluate<T, U, V, W>((U, V, W) => T, u: U, v: V, w: W): Promise<T>,
-  evaluateHandle<T>(() => T): Promise<JSHandle<T>>,
+  evaluateHandle(() => any): Promise<JSHandle>,
   close(): Promise<void>,
   on(type: string, (e: any) => void): void,
   removeListener(type: string, (e: any) => void): void,
@@ -46,20 +47,25 @@ export type Page = {
   waitForLogin(target: string): Promise<Array<Cookie> | void>
 };
 
-export type ElementHandle = {
-  click(): Promise<void>,
-  type(text: string): Promise<void>,
+export type JSHandle = {
+  getProperties(): Promise<Map<string, JSHandle>>,
   asElement(): ElementHandle
 };
 
-export type JSHandle<T> = {
-  jsonValue(): T
+export type ElementHandle = {
+  click(): Promise<void>,
+  type(text: string): Promise<void>,
+  asElement(): ElementHandle,
+  boundingBox(): Rect,
+  $(selector: string): Promise<ElementHandle>,
+  $$(selector: string): Promise<Array<ElementHandle>>
 };
 
 export type Mouse = {
   move(x: number, y: number): Promise<void>,
   down(): Promise<void>,
-  up(): Promise<void>
+  up(): Promise<void>,
+  click(x: number, y: number, { delay?: number }): Promise<void>
 };
 
 export type Keyboard = {
@@ -78,8 +84,8 @@ export type Viewport = {
 };
 
 export type Rect = {
-  left: number,
-  top: number,
+  x: number,
+  y: number,
   width: number,
   height: number
 };

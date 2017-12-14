@@ -5,20 +5,25 @@ const qs = require("querystring");
 const puppeteer = require("puppeteer");
 const { wait, stat, readFile, writeFile, statusText } = require("./utils");
 const patchToPage = require("./page");
-import type { Browser, Page, Cookie, PostOptions } from "./types";
+import type {
+  Browser,
+  Page,
+  Cookie,
+  PostOptions,
+  JSHandle,
+  ElementHandle
+} from "./types";
 
 const rEditURL = /^https:\/\/medium\.com\/p\/([\w\d]+)\/edit$/;
 
-type Options = {
-  cookiesPath?: string
-};
-
 class Client {
-  options: Options;
+  options: {
+    cookiesPath: string
+  };
   browser: Browser;
   cookies: Array<Cookie>;
 
-  constructor(options?: Options) {
+  constructor(options?: { cookiesPath?: string }) {
     this.options = {
       cookiesPath: "cookies.json",
       ...options
@@ -168,11 +173,13 @@ class Client {
           ),
           el => {
             const text = el.innerText;
-            return /^https:\/\/twitter\.com\/.+\/status\/\d+$/.test(text);
+            return /^https:\/\/twitter\.com\/.+\/status\/\d+$/.test(
+              String(text)
+            );
           }
         );
       });
-      const props = await jsHandle.getProperties();
+      const props: Map<string, JSHandle> = await jsHandle.getProperties();
       for (const prop of props.values()) {
         const el = prop.asElement();
         if (el != null) {
@@ -241,7 +248,9 @@ class Client {
               rePathname: /^\/_\/api\/posts\/[\dabcdef]+\/tags$/
             });
             for (const tag of tags) {
-              const button = await tag.$('button[data-action="remove-token"]');
+              const button: ElementHandle = await tag.$(
+                'button[data-action="remove-token"]'
+              );
               await button.click();
             }
             await updated;

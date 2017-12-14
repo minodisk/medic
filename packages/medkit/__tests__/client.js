@@ -6,27 +6,12 @@ const {removeFile} = require('../src/utils');
 
 jest.setTimeout(60000);
 
-describe.skip('readCookies()', () => {
-  it('should be create cookies', async () => {
-    expect.assertions(1);
-    await removeFile('cookies.json');
-    const client = new Client();
-    const cookies = await client.readCookies();
-    for (const cookie of cookies) {
-      if (cookie.name === 'sid') {
-        expect(cookie.name).toBe('sid');
-      }
-    }
-  });
-});
-
 describe('CRUD post', () => {
   let postId;
   let client: Client;
 
   beforeAll(async () => {
     client = new Client();
-    await client.ready('cookies.json');
   });
 
   afterAll(async () => {
