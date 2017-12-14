@@ -2,9 +2,30 @@
 # yarn lockfile v1
 
 
+"@minodisk/medkit@^0.2.0":
+  version "0.2.0"
+  resolved "https://registry.yarnpkg.com/@minodisk/medkit/-/medkit-0.2.0.tgz#259796a40abbe1456a31d1ffe87202fd23c458cb"
+  dependencies:
+    puppeteer "^0.13.0"
+
+"@minodisk/medmd@^0.2.0":
+  version "0.2.0"
+  resolved "https://registry.yarnpkg.com/@minodisk/medmd/-/medmd-0.2.0.tgz#557691159e5cb7d6fb8d68d9b4cebaf27cefc980"
+  dependencies:
+    image-size "^0.6.1"
+    mdurl "^1.0.1"
+    rehype-parse "^4.0.0"
+    rehype-remark "^2.1.0"
+    remark-breaks "^1.0.0"
+    remark-html "^6.0.1"
+    remark-parse "^4.0.0"
+    remark-stringify "^4.0.0"
+    sync-request "^4.1.0"
+    unified "^6.1.6"
+
 "@types/node@*":
-  version "8.0.58"
-  resolved "https://registry.yarnpkg.com/@types/node/-/node-8.0.58.tgz#5b3881c0be3a646874803fee3197ea7f1ed6df90"
+  version "8.5.1"
+  resolved "https://registry.yarnpkg.com/@types/node/-/node-8.5.1.tgz#4ec3020bcdfe2abffeef9ba3fbf26fca097514b5"
 
 abab@^1.0.3:
   version "1.0.4"
