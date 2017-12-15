@@ -1,10 +1,10 @@
 // @flow
 
-const url = require('url');
-const qs = require('querystring');
-const puppeteer = require('puppeteer');
-const {wait, stat, readFile, writeFile, statusText} = require('./utils');
-const patchToPage = require('./page');
+const url = require("url");
+const qs = require("querystring");
+const puppeteer = require("puppeteer");
+const { wait, stat, readFile, writeFile, statusText } = require("./utils");
+const patchToPage = require("./page");
 
 import type {
   Browser,
@@ -12,31 +12,31 @@ import type {
   Cookie,
   PostOptions,
   JSHandle,
-  ElementHandle,
-} from './types';
+  ElementHandle
+} from "./types";
 
 const rEditURL = /^https:\/\/medium\.com\/p\/([\w\d]+)\/edit$/;
 
 type Logger = {
-  log(...messages: Array<any>): void,
+  log(...messages: Array<any>): void
 };
 
 class Client {
   options: {
     cookiesPath: string,
-    logger: Logger,
+    logger: Logger
   };
   browser: Browser;
   cookies: Array<Cookie>;
 
-  constructor(options?: {cookiesPath?: string, logger?: Logger}) {
+  constructor(options?: { cookiesPath?: string, logger?: Logger }) {
     this.options = {
-      cookiesPath: 'cookies.json',
-      ...options,
+      cookiesPath: "cookies.json",
+      ...options
     };
     if (this.options.logger == null) {
       this.options.logger = {
-        log: (...message: Array<any>): void => {},
+        log: (...message: Array<any>): void => {}
       };
     }
   }
@@ -47,7 +47,7 @@ class Client {
         resolve();
         return;
       }
-      this.browser = await puppeteer.launch({headless: false});
+      this.browser = await puppeteer.launch({ headless: false });
       resolve();
     });
   }
@@ -70,7 +70,7 @@ class Client {
       const page = patchToPage(await this.browser.newPage());
       await page.setViewport({
         width: 1000,
-        height: 1000,
+        height: 1000
       });
       if (this.cookies == null) {
         try {
@@ -96,8 +96,8 @@ class Client {
             if (u.query != null) {
               const q = qs.parse(u.query);
               if (
-                u.host === 'medium.com' &&
-                u.pathname === '/m/signin' &&
+                u.host === "medium.com" &&
+                u.pathname === "/m/signin" &&
                 q.redirect === redirect
               ) {
                 loggingIn = true;
@@ -106,12 +106,12 @@ class Client {
             }
           }
           if (e._url === redirect) {
-            page.removeListener('framenavigated', (onChanged: any));
+            page.removeListener("framenavigated", (onChanged: any));
             if (loggingIn) {
               this.cookies = await page.cookies();
               await writeFile(
                 this.options.cookiesPath,
-                JSON.stringify(this.cookies),
+                JSON.stringify(this.cookies)
               );
             }
             resolve();
@@ -120,7 +120,7 @@ class Client {
           reject(err);
         }
       };
-      page.on('framenavigated', (onChanged: any));
+      page.on("framenavigated", (onChanged: any));
     });
   }
 
@@ -129,9 +129,9 @@ class Client {
       const page = await this.newPage();
       await this.gotoAndPaste(
         page,
-        'https://medium.com/new-story',
+        "https://medium.com/new-story",
         html,
-        options,
+        options
       );
       const matched = await page.waitForPushed(rEditURL);
       await page.close();
@@ -142,7 +142,7 @@ class Client {
   updatePost(
     postId: string,
     html: string,
-    options?: PostOptions,
+    options?: PostOptions
   ): Promise<void> {
     return new Promise(async (resolve, reject) => {
       const page = await this.newPage();
@@ -150,7 +150,7 @@ class Client {
         page,
         `https://medium.com/p/${postId}/edit`,
         html,
-        options,
+        options
       );
       await page.close();
       resolve();
@@ -161,50 +161,50 @@ class Client {
     page: Page,
     url: string,
     html: string,
-    options?: PostOptions,
+    options?: PostOptions
   ): Promise<void> {
     return new Promise(async (resolve, reject) => {
-      await page.setDataToClipboard('text/html', html);
+      await page.setDataToClipboard("text/html", html);
       await page.goto(url, {
-        timeout: 0,
+        timeout: 0
       });
-      this.options.logger.log('wait for login');
+      this.options.logger.log("wait for login");
       await this.waitForLogin(page, url);
-      this.options.logger.log('wait for loading');
+      this.options.logger.log("wait for loading");
       await this.waitForLoadingApp(page);
-      await page.focus('div.section-inner');
-      await page.shortcut('a');
-      await page.shortcut('v');
+      await page.focus("div.section-inner");
+      await page.shortcut("a");
+      await page.shortcut("v");
 
-      this.options.logger.log('embed tweets');
+      this.options.logger.log("embed tweets");
       const jsHandle = await page.evaluateHandle(() => {
         return Array.prototype.filter.call(
           document.querySelectorAll(
-            'a.markup--anchor.markup--p-anchor[target="_blank"]',
+            'a.markup--anchor.markup--p-anchor[target="_blank"]'
           ),
           el => {
             const text = el.innerText;
             return /^https:\/\/twitter\.com\/.+\/status\/\d+$/.test(
-              String(text),
+              String(text)
             );
-          },
+          }
         );
       });
       const props: Map<string, JSHandle> = await jsHandle.getProperties();
       for (const prop of props.values()) {
         const el = prop.asElement();
         if (el != null) {
-          const {x, y, width, height} = await el.boundingBox();
-          this.options.logger.log('  at:', x + width, y + height);
-          await page.mouse.click(x + width, y + height, {delay: 100});
-          await page.keyboard.press('Enter', {delay: 100});
-          await page.keyboard.press('Backspace', {delay: 100});
+          const { x, y, width, height } = await el.boundingBox();
+          this.options.logger.log("  at:", x + width, y + height);
+          await page.mouse.click(x + width, y + height, { delay: 100 });
+          await page.keyboard.press("Enter", { delay: 100 });
+          await page.keyboard.press("Backspace", { delay: 100 });
         }
       }
 
-      await page.shortcut('s');
+      await page.shortcut("s");
       await this.waitForRequest(page, 10000, {
-        rePathname: /^\/p\/[\dabcdef]+\/deltas$/,
+        rePathname: /^\/p\/[\dabcdef]+\/deltas$/
       });
       if (options != null && Object.keys(options).length > 0) {
         await this.updatePostOptions(page, options);
@@ -220,7 +220,7 @@ class Client {
         this.options.logger.log("wait for medium's scripts");
         for (;;) {
           const existsMDM = await page.evaluate(() => window._mdm != null);
-          this.options.logger.log('  scripts exists:', existsMDM);
+          this.options.logger.log("  scripts exists:", existsMDM);
           if (existsMDM) {
             break;
           }
@@ -228,8 +228,8 @@ class Client {
         }
         this.options.logger.log("wait for loading medium's app");
         for (;;) {
-          const isLoading = (await page.$('body.is-loadingApp')) != null;
-          this.options.logger.log('  loading:', isLoading);
+          const isLoading = (await page.$("body.is-loadingApp")) != null;
+          this.options.logger.log("  loading:", isLoading);
           if (!isLoading) {
             break;
           }
@@ -237,7 +237,7 @@ class Client {
         }
         resolve();
       } catch (err) {
-        this.options.logger.log('  loading error:', err);
+        this.options.logger.log("  loading error:", err);
         reject(err);
       }
     });
@@ -245,44 +245,44 @@ class Client {
 
   updatePostOptions(page: Page, options: PostOptions): Promise<void> {
     return new Promise(async (resolve, reject) => {
-      this.options.logger.log('open post options');
+      this.options.logger.log("open post options");
       await this.openPostOptions(page);
       {
         try {
-          const selector = 'div.js-tagToken';
-          await page.waitForSelector(selector, {timeout: 1000});
+          const selector = "div.js-tagToken";
+          await page.waitForSelector(selector, { timeout: 1000 });
           await wait(1000);
           const tags = await page.$$(selector);
           if (tags.length > 0) {
-            this.options.logger.log('remove tags:', tags.length);
+            this.options.logger.log("remove tags:", tags.length);
             const updated = this.waitForRequest(page, 1000, {
-              rePathname: /^\/_\/api\/posts\/[\dabcdef]+\/tags$/,
+              rePathname: /^\/_\/api\/posts\/[\dabcdef]+\/tags$/
             });
             for (const tag of tags) {
               const button: ElementHandle = await tag.$(
-                'button[data-action="remove-token"]',
+                'button[data-action="remove-token"]'
               );
               await button.click();
             }
             await updated;
           }
         } catch (err) {
-          this.options.logger.log('fail to remeove tag:', err);
+          this.options.logger.log("fail to remeove tag:", err);
         }
       }
       if (options.tags != null && options.tags.length > 0) {
-        const {tags} = options;
-        const selector = 'div.js-tagInput span';
+        const { tags } = options;
+        const selector = "div.js-tagInput span";
         await page.waitForSelector(selector);
         await wait(1000);
-        this.options.logger.log('add tags');
+        this.options.logger.log("add tags");
         const updated = this.waitForRequest(page, 1000, {
-          rePathname: /^\/_\/api\/posts\/[\dabcdef]+\/tags$/,
+          rePathname: /^\/_\/api\/posts\/[\dabcdef]+\/tags$/
         });
         await page.click(selector);
         await page.focus(selector);
         for (const tag of tags) {
-          this.options.logger.log('  add tag:', tag);
+          this.options.logger.log("  add tag:", tag);
           await page.type(selector, `${tag},`);
         }
         await updated;
@@ -297,20 +297,20 @@ class Client {
     matcher: {
       method?: string,
       host?: string,
-      rePathname: RegExp,
-    },
+      rePathname: RegExp
+    }
   ): Promise<void> {
-    const {method, host, rePathname} = {
-      method: 'POST',
-      host: 'medium.com',
-      ...matcher,
+    const { method, host, rePathname } = {
+      method: "POST",
+      host: "medium.com",
+      ...matcher
     };
 
     return new Promise(async (resolve, reject) => {
-      this.options.logger.log('wait for request:', method, host, rePathname);
+      this.options.logger.log("wait for request:", method, host, rePathname);
       let timeoutId = setTimeout(async () => {
         await page.setRequestInterception(false);
-        page.removeListener('request', (onRequested: any));
+        page.removeListener("request", (onRequested: any));
         resolve();
       }, timeout);
       const onRequested = async req => {
@@ -322,28 +322,28 @@ class Client {
             u.host === host &&
             rePathname.test(String(u.pathname));
           this.options.logger.log(
-            '  requested:',
+            "  requested:",
             req.method,
             u.host,
             u.pathname,
-            matched,
+            matched
           );
           if (matched) {
             clearTimeout(timeoutId);
             timeoutId = setTimeout(async () => {
               await page.setRequestInterception(false);
-              page.removeListener('request', (onRequested: any));
+              page.removeListener("request", (onRequested: any));
               resolve();
             }, timeout);
           }
         } catch (err) {
           await page.setRequestInterception(false);
-          page.removeListener('request', (onRequested: any));
+          page.removeListener("request", (onRequested: any));
           reject(err);
         }
       };
       await page.setRequestInterception(true);
-      page.on('request', (onRequested: any));
+      page.on("request", (onRequested: any));
     });
   }
 
@@ -353,10 +353,10 @@ class Client {
       const options = {};
       {
         try {
-          const selector = 'div.js-tagToken';
-          await page.waitForSelector(selector, {timeout: 100});
+          const selector = "div.js-tagToken";
+          await page.waitForSelector(selector, { timeout: 100 });
           options.tags = await page.$$eval(selector, els =>
-            Array.prototype.map.call(els, el => el.getAttribute('data-value')),
+            Array.prototype.map.call(els, el => el.getAttribute("data-value"))
           );
         } catch (err) {}
       }
@@ -375,18 +375,18 @@ class Client {
     });
   }
 
-  readPost(postId: string): Promise<{html: string, options: PostOptions}> {
+  readPost(postId: string): Promise<{ html: string, options: PostOptions }> {
     return new Promise(async (resolve, reject) => {
       const page = await this.newPage();
       const onResponse = async res => {
         const req = res.request();
         if (
-          req.method !== 'GET' ||
+          req.method !== "GET" ||
           req.url !== `https://medium.com/p/${postId}/edit`
         ) {
           return;
         }
-        page.removeListener('response', (onResponse: any));
+        page.removeListener("response", (onResponse: any));
         if (res.status < 400) {
           return;
         }
@@ -394,19 +394,19 @@ class Client {
           reject(`${res.status} ${statusText(res.status)}`);
         });
       };
-      page.on('response', (onResponse: any));
+      page.on("response", (onResponse: any));
 
       const url = `https://medium.com/p/${postId}/edit`;
-      await page.goto(url, {timeout: 0});
+      await page.goto(url, { timeout: 0 });
       await this.waitForLogin(page, url);
-      await page.waitForNavigation({timeout: 0, waitUntil: 'load'});
-      await page.waitForSelector('div.section-inner');
-      const html = await page.$eval('div.section-inner', el => {
+      await page.waitForNavigation({ timeout: 0, waitUntil: "load" });
+      await page.waitForSelector("div.section-inner");
+      const html = await page.$eval("div.section-inner", el => {
         return el.innerHTML;
       });
       const options = await this.readPostOptions(page);
       await page.close();
-      resolve({html, options});
+      resolve({ html, options });
     });
   }
 
@@ -414,7 +414,7 @@ class Client {
     return new Promise(async (resolve, reject) => {
       const page = await this.newPage();
       const url = `https://medium.com/p/${postId}/edit`;
-      await page.goto(url, {timeout: 0});
+      await page.goto(url, { timeout: 0 });
       await this.waitForLogin(page, url);
       {
         const selector = 'button[data-action="show-post-actions-popover"]';
@@ -432,16 +432,16 @@ class Client {
       const onResponse = async res => {
         const req = res.request();
         if (
-          req.method !== 'DELETE' ||
+          req.method !== "DELETE" ||
           req.url !== `https://medium.com/p/${postId}`
         ) {
           return;
         }
-        page.removeListener('response', (onResponse: any));
+        page.removeListener("response", (onResponse: any));
         await page.close();
         resolve();
       };
-      page.on('response', (onResponse: any));
+      page.on("response", (onResponse: any));
 
       {
         const selector = 'button[data-action="overlay-confirm"]';
