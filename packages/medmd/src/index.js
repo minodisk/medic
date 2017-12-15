@@ -416,3 +416,5 @@ const html2md = (html: string): Promise<string> =>
         resolve(String(file));
       });
   });
+
+module.exports = { md2html, html2md };
