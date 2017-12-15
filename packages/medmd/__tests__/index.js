@@ -1,7 +1,6 @@
 // @flow
 
 require('jest');
-import type {describe, it, expect} from 'jest';
 const vfile = require('vfile');
 const {md2html, html2md} = require('../src/index');
 
@@ -68,17 +67,6 @@ Text
       );
     });
   });
-
-  //   describe('twitter', () => {
-  //     it('blockquote', async () => {
-  //       const html = await md2html(
-  //         `https://twitter.com/minodisk/status/922726097208446976`,
-  //       );
-  //       expect(html)
-  //         .toBe(`<blockquote class="twitter-tweet" data-lang="ja"><a href="https://twitter.com/minodisk/status/922726097208446976?ref_src=twsrc%5Etfw"></a></blockquote>
-  // `);
-  //     });
-  //   });
 });
 
 describe('html2md', () => {

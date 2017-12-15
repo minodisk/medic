@@ -18,12 +18,6 @@ const html2hast = require("rehype-parse");
 const hast2mdast = require("rehype-remark");
 const mdast2md = require("remark-stringify");
 
-// () => {
-//   const {inlineTokenizers, inlineMethods} = md2mdast.Parser.prototype;
-//   inlineTokenizers.figure = tokenizeFigure;
-//   inlineMethods.splice(methods.indexOf('text'), 0, 'figure');
-// };
-
 type VFile = {
   contents: string,
   cwd: string,
@@ -34,7 +28,7 @@ type VFile = {
   basename?: string,
   stem?: string,
   extname?: string,
-  dirname?: string
+  dirname?: string,
 };
 
 const isEmpty = (text: string) => /^ *$/.test(text);
@@ -60,32 +54,6 @@ const transformMDAST = options => {
           if (node.children == null) {
             return [node];
           }
-
-          // if (
-          //   node.children.length === 1 &&
-          //   node.children[0].type === "link" &&
-          //   node.children[0].url.indexOf("https://twitter.com/") === 0
-          // ) {
-          //   node.children[0].url += "?ref_src=twsrc%5Etfw";
-          //   return [
-          //     {
-          //       type: "blockquote",
-          //       class: "twitter-tweet",
-          //       lang: "ja",
-          //       children: [
-          //         {
-          //           type: "paragraph",
-          //           children: [
-          //             {
-          //               type: "text"
-          //             }
-          //           ]
-          //         },
-          //         node.children[0]
-          //       ]
-          //     }
-          //   ];
-          // }
 
           let isOnlyImage = true;
           let len = 0;
@@ -161,11 +129,11 @@ const transformMDAST = options => {
                       children: [
                         {
                           type: "text",
-                          value: caption
-                        }
-                      ]
-                    }
-                  ]
+                          value: caption,
+                        },
+                      ],
+                    },
+                  ],
                 });
                 i++;
                 break;
@@ -183,10 +151,10 @@ const transformMDAST = options => {
                 node,
                 {
                   type: "figcaption",
-                  children: [{ type: "text", value: caption }]
-                }
-              ]
-            }
+                  children: [{ type: "text", value: caption }],
+                },
+              ],
+            },
           ];
 
         default:
@@ -267,7 +235,7 @@ const mdast2html = function(options) {
             props["data-height"] = node.height;
           }
           return h(node, "img", props);
-        }
+        },
         // blockquote: (h, node) => {
         //   const props = {};
         //   if (node.class != null) {
@@ -278,7 +246,7 @@ const mdast2html = function(options) {
         //   }
         //   return h(node, 'blockquote', props, wrap(all(h, node), true));
         // },
-      }
+      },
     });
     var result;
 
@@ -292,7 +260,7 @@ const mdast2html = function(options) {
 
     result = hast2html(hast, {
       ...settings,
-      allowDangerousHTML: !clean
+      allowDangerousHTML: !clean,
     });
 
     /* Add a final newline. */
@@ -448,5 +416,3 @@ const html2md = (html: string): Promise<string> =>
         resolve(String(file));
       });
   });
-
-module.exports = { md2html, html2md };
