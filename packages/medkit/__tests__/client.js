@@ -2,7 +2,7 @@
 
 const cheerio = require('cheerio');
 const Client = require('../src/client');
-const {removeFile} = require('../src/utils');
+const {removeFile, wait} = require('../src/utils');
 
 jest.setTimeout(60000);
 
