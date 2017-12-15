@@ -1,6 +1,14 @@
 // @flow
 
-import type { Page, ClipboardEvent, Cookie } from "./types";
+const { statusText } = require("./utils");
+import type { Page, ClipboardEvent, Cookie, Logger, Context } from "./types";
+
+const test = (str: string, re: string | RegExp): boolean => {
+  if (typeof re === "string") {
+    return str === re;
+  }
+  return re.test(str);
+};
 
 const enhance = {
   shortcut: function(key: string): Promise<void> {
@@ -23,10 +31,55 @@ const enhance = {
           (document: any).addEventListener("copy", onCopy);
         },
         type,
-        data
+        data,
       );
       await this.shortcut("c");
       resolve();
+    });
+  },
+
+  waitForResponse(
+    method: "OPTIONS" | "GET" | "POST" | "PUT" | "PATCH" | "DELETE",
+    url: string | RegExp,
+    context: Context,
+    options?: {
+      timeout?: number,
+    },
+  ): Promise<void> {
+    const opts = {
+      timeout: 10000,
+      ...options,
+    };
+    return new Promise((resolve, reject) => {
+      context.logger.log("wait for response:", method, url);
+      let timeoutId;
+      if (opts.timeout > 0) {
+        timeoutId = setTimeout(() => {
+          this.removeListener("response", (onResponse: any));
+          context.logger.log("  timeout:", opts.timeout);
+          reject("timeout");
+        }, opts.timeout);
+      }
+      const onResponse = async res => {
+        const req = res.request();
+        if (req.method !== method || !test(req.url, url)) {
+          // context.logger.log("  unmatch:", req.method, req.url);
+          return;
+        }
+
+        context.logger.log("  match:", req.method, req.url);
+        clearTimeout(timeoutId);
+        this.removeListener("response", (onResponse: any));
+
+        if (res.status >= 400) {
+          context.logger.log("  bad status:", res.status);
+          reject(`${res.status} ${statusText(res.status)}`);
+          return;
+        }
+        context.logger.log("  good status:", res.status);
+        resolve();
+      };
+      this.on("response", (onResponse: any));
     });
   },
 
@@ -55,7 +108,7 @@ const enhance = {
         }, timeout);
       }
     });
-  }
+  },
 };
 
 module.exports = function(page: any): Page {

@@ -3,7 +3,7 @@
 const url = require("url");
 const qs = require("querystring");
 const puppeteer = require("puppeteer");
-const { wait, stat, readFile, writeFile, statusText } = require("./utils");
+const { wait, stat, readFile, writeFile } = require("./utils");
 const patchToPage = require("./page");
 
 import type {
@@ -12,31 +12,40 @@ import type {
   Cookie,
   PostOptions,
   JSHandle,
-  ElementHandle
+  ElementHandle,
+  Logger,
+  Context,
+  Options,
 } from "./types";
 
 const rEditURL = /^https:\/\/medium\.com\/p\/([\w\d]+)\/edit$/;
 
-type Logger = {
-  log(...messages: Array<any>): void
-};
-
 class Client {
-  options: {
-    cookiesPath: string,
-    logger: Logger
-  };
+  context: Context;
+  options: Options;
   browser: Browser;
   cookies: Array<Cookie>;
 
-  constructor(options?: { cookiesPath?: string, logger?: Logger }) {
+  constructor(
+    context?: {
+      logger?: Logger,
+      debug?: boolean,
+    },
+    options?: {
+      cookiesPath?: string,
+    },
+  ) {
+    this.context = {
+      debug: false,
+      ...context,
+    };
     this.options = {
       cookiesPath: "cookies.json",
-      ...options
+      ...options,
     };
-    if (this.options.logger == null) {
-      this.options.logger = {
-        log: (...message: Array<any>): void => {}
+    if (this.context.logger == null) {
+      this.context.logger = {
+        log: (...message: Array<any>): void => {},
       };
     }
   }
@@ -47,7 +56,7 @@ class Client {
         resolve();
         return;
       }
-      this.browser = await puppeteer.launch({ headless: false });
+      this.browser = await puppeteer.launch({ headless: !this.context.debug });
       resolve();
     });
   }
@@ -68,9 +77,11 @@ class Client {
     return new Promise(async (resolve, reject) => {
       await this.open();
       const page = patchToPage(await this.browser.newPage());
+      const ua = await page.evaluate(() => navigator.userAgent);
+      await page.setUserAgent(ua.replace("Headless", ""));
       await page.setViewport({
         width: 1000,
-        height: 1000
+        height: 1000,
       });
       if (this.cookies == null) {
         try {
@@ -86,8 +97,112 @@ class Client {
     });
   }
 
+  createPost(html: string, options?: PostOptions): Promise<string> {
+    return new Promise(async (resolve, reject) => {
+      const page = await this.newPage();
+      await this.gotoAndPaste(
+        page,
+        "https://medium.com/new-story",
+        html,
+        options,
+      );
+      const matched = await page.waitForPushed(rEditURL);
+      await page.close();
+      resolve(matched[1]);
+    });
+  }
+
+  updatePost(
+    postId: string,
+    html: string,
+    options?: PostOptions,
+  ): Promise<void> {
+    return new Promise(async (resolve, reject) => {
+      const page = await this.newPage();
+      await this.gotoAndPaste(
+        page,
+        `https://medium.com/p/${postId}/edit`,
+        html,
+        options,
+      );
+      await page.close();
+      resolve();
+    });
+  }
+
+  gotoAndPaste(
+    page: Page,
+    url: string,
+    html: string,
+    options?: PostOptions,
+  ): Promise<void> {
+    return new Promise(async (resolve, reject) => {
+      await page.setDataToClipboard("text/html", html);
+      await page.goto(url, {
+        timeout: 0,
+      });
+      await this.waitForLogin(page, url);
+      await this.waitForLoading(page);
+      await page.focus("div.section-inner");
+      await page.shortcut("a");
+      await page.shortcut("v");
+
+      this.context.logger.log("embed tweets");
+      const jsHandle = await page.evaluateHandle(() => {
+        return Array.prototype.filter.call(
+          document.querySelectorAll(
+            'a.markup--anchor.markup--p-anchor[target="_blank"]',
+          ),
+          el => {
+            const text = el.innerText;
+            return /^https:\/\/twitter\.com\/.+\/status\/\d+$/.test(
+              String(text),
+            );
+          },
+        );
+      });
+      const props: Map<string, JSHandle> = await jsHandle.getProperties();
+      for (const prop of props.values()) {
+        const el = prop.asElement();
+        if (el != null) {
+          const { x, y, width, height } = await el.boundingBox();
+          this.context.logger.log("  at:", x + width, y + height);
+          await page.mouse.click(x + width, y + height, { delay: 100 });
+          await page.keyboard.press("Enter", { delay: 100 });
+          await page.keyboard.press("Backspace", { delay: 100 });
+        }
+      }
+
+      await page.shortcut("s");
+      this.context.logger.log("wait for saving post");
+      for (let i = 0; ; i++) {
+        try {
+          await page.waitForResponse(
+            "POST",
+            /^https:\/\/medium\.com\/p\/[\dabcdef]+\/deltas$/,
+            this.context,
+          );
+          this.context.logger.log("  saved:", i);
+        } catch (err) {
+          if (err === "timeout") {
+            this.context.logger.log("saving post complete");
+            break;
+          }
+          reject(err);
+          return;
+        }
+      }
+
+      if (options != null && Object.keys(options).length > 0) {
+        await this.updatePostOptions(page, options);
+      }
+      resolve();
+    });
+  }
+
   waitForLogin(page: Page, redirect: string): Promise<void> {
     return new Promise(async (resolve, reject) => {
+      this.context.logger.log("wait for login");
       let loggingIn = false;
       const onChanged = async e => {
         try {
@@ -111,256 +226,70 @@ class Client {
               this.cookies = await page.cookies();
               await writeFile(
                 this.options.cookiesPath,
-                JSON.stringify(this.cookies)
+                JSON.stringify(this.cookies),
               );
             }
+            this.context.logger.log("complete to login");
             resolve();
           }
         } catch (err) {
           reject(err);
+          return;
         }
       };
       page.on("framenavigated", (onChanged: any));
     });
   }
 
-  createPost(html: string, options?: PostOptions): Promise<string> {
+  waitForLoading(page: Page): Promise<void> {
     return new Promise(async (resolve, reject) => {
-      const page = await this.newPage();
-      await this.gotoAndPaste(
-        page,
-        "https://medium.com/new-story",
-        html,
-        options
-      );
-      const matched = await page.waitForPushed(rEditURL);
-      await page.close();
-      resolve(matched[1]);
-    });
-  }
-
-  updatePost(
-    postId: string,
-    html: string,
-    options?: PostOptions
-  ): Promise<void> {
-    return new Promise(async (resolve, reject) => {
-      const page = await this.newPage();
-      await this.gotoAndPaste(
-        page,
-        `https://medium.com/p/${postId}/edit`,
-        html,
-        options
-      );
-      await page.close();
-      resolve();
-    });
-  }
-
-  gotoAndPaste(
-    page: Page,
-    url: string,
-    html: string,
-    options?: PostOptions
-  ): Promise<void> {
-    return new Promise(async (resolve, reject) => {
-      await page.setDataToClipboard("text/html", html);
-      await page.goto(url, {
-        timeout: 0
-      });
-      this.options.logger.log("wait for login");
-      await this.waitForLogin(page, url);
-      this.options.logger.log("wait for loading");
-      await this.waitForLoadingApp(page);
-      await page.focus("div.section-inner");
-      await page.shortcut("a");
-      await page.shortcut("v");
-
-      this.options.logger.log("embed tweets");
-      const jsHandle = await page.evaluateHandle(() => {
-        return Array.prototype.filter.call(
-          document.querySelectorAll(
-            'a.markup--anchor.markup--p-anchor[target="_blank"]'
-          ),
-          el => {
-            const text = el.innerText;
-            return /^https:\/\/twitter\.com\/.+\/status\/\d+$/.test(
-              String(text)
-            );
-          }
-        );
-      });
-      const props: Map<string, JSHandle> = await jsHandle.getProperties();
-      for (const prop of props.values()) {
-        const el = prop.asElement();
-        if (el != null) {
-          const { x, y, width, height } = await el.boundingBox();
-          this.options.logger.log("  at:", x + width, y + height);
-          await page.mouse.click(x + width, y + height, { delay: 100 });
-          await page.keyboard.press("Enter", { delay: 100 });
-          await page.keyboard.press("Backspace", { delay: 100 });
-        }
-      }
-
-      await page.shortcut("s");
-      await this.waitForRequest(page, 10000, {
-        rePathname: /^\/p\/[\dabcdef]+\/deltas$/
-      });
-      if (options != null && Object.keys(options).length > 0) {
-        await this.updatePostOptions(page, options);
-      }
-      resolve();
-    });
-  }
-
-  waitForLoadingApp(page: Page): Promise<void> {
-    return new Promise(async (resolve, reject) => {
+      this.context.logger.log("wait for loading");
       try {
         await wait(1000);
-        this.options.logger.log("wait for medium's scripts");
+
+        // await page.waitForNavigation({ waitUntil: "load" });
+
+        this.context.logger.log("  wait for loading scripts");
         for (;;) {
           const existsMDM = await page.evaluate(() => window._mdm != null);
-          this.options.logger.log("  scripts exists:", existsMDM);
+          this.context.logger.log("  exists scripts:", existsMDM);
           if (existsMDM) {
             break;
           }
           await wait(500);
         }
-        this.options.logger.log("wait for loading medium's app");
+        this.context.logger.log("  complete to loading scripts");
+
+        this.context.logger.log("  wait for loading app");
         for (;;) {
           const isLoading = (await page.$("body.is-loadingApp")) != null;
-          this.options.logger.log("  loading:", isLoading);
+          this.context.logger.log("  loading app:", isLoading);
           if (!isLoading) {
             break;
           }
           await wait(500);
         }
+        this.context.logger.log("  complete to loading app");
+
+        this.context.logger.log("complete loading");
         resolve();
       } catch (err) {
-        this.options.logger.log("  loading error:", err);
+        this.context.logger.log("  loading error:", err);
         reject(err);
+        return;
       }
     });
   }
 
   updatePostOptions(page: Page, options: PostOptions): Promise<void> {
     return new Promise(async (resolve, reject) => {
-      this.options.logger.log("open post options");
+      this.context.logger.log("open post options");
       await this.openPostOptions(page);
-      {
-        try {
-          const selector = "div.js-tagToken";
-          await page.waitForSelector(selector, { timeout: 1000 });
-          await wait(1000);
-          const tags = await page.$$(selector);
-          if (tags.length > 0) {
-            this.options.logger.log("remove tags:", tags.length);
-            const updated = this.waitForRequest(page, 1000, {
-              rePathname: /^\/_\/api\/posts\/[\dabcdef]+\/tags$/
-            });
-            for (const tag of tags) {
-              const button: ElementHandle = await tag.$(
-                'button[data-action="remove-token"]'
-              );
-              await button.click();
-            }
-            await updated;
-          }
-        } catch (err) {
-          this.options.logger.log("fail to remeove tag:", err);
-        }
-      }
+      await this.removeTags(page);
       if (options.tags != null && options.tags.length > 0) {
-        const { tags } = options;
-        const selector = "div.js-tagInput span";
-        await page.waitForSelector(selector);
-        await wait(1000);
-        this.options.logger.log("add tags");
-        const updated = this.waitForRequest(page, 1000, {
-          rePathname: /^\/_\/api\/posts\/[\dabcdef]+\/tags$/
-        });
-        await page.click(selector);
-        await page.focus(selector);
-        for (const tag of tags) {
-          this.options.logger.log("  add tag:", tag);
-          await page.type(selector, `${tag},`);
-        }
-        await updated;
+        await this.addTags(page, options.tags);
       }
       resolve();
-    });
-  }
-
-  waitForRequest(
-    page: Page,
-    timeout: number,
-    matcher: {
-      method?: string,
-      host?: string,
-      rePathname: RegExp
-    }
-  ): Promise<void> {
-    const { method, host, rePathname } = {
-      method: "POST",
-      host: "medium.com",
-      ...matcher
-    };
-
-    return new Promise(async (resolve, reject) => {
-      this.options.logger.log("wait for request:", method, host, rePathname);
-      let timeoutId = setTimeout(async () => {
-        await page.setRequestInterception(false);
-        page.removeListener("request", (onRequested: any));
-        resolve();
-      }, timeout);
-      const onRequested = async req => {
-        req.continue();
-        try {
-          const u = url.parse(req.url);
-          const matched =
-            req.method === method &&
-            u.host === host &&
-            rePathname.test(String(u.pathname));
-          this.options.logger.log(
-            "  requested:",
-            req.method,
-            u.host,
-            u.pathname,
-            matched
-          );
-          if (matched) {
-            clearTimeout(timeoutId);
-            timeoutId = setTimeout(async () => {
-              await page.setRequestInterception(false);
-              page.removeListener("request", (onRequested: any));
-              resolve();
-            }, timeout);
-          }
-        } catch (err) {
-          await page.setRequestInterception(false);
-          page.removeListener("request", (onRequested: any));
-          reject(err);
-        }
-      };
-      await page.setRequestInterception(true);
-      page.on("request", (onRequested: any));
-    });
-  }
-
-  readPostOptions(page: Page): Promise<PostOptions> {
-    return new Promise(async (resolve, reject) => {
-      await this.openPostOptions(page);
-      const options = {};
-      {
-        try {
-          const selector = "div.js-tagToken";
-          await page.waitForSelector(selector, { timeout: 100 });
-          options.tags = await page.$$eval(selector, els =>
-            Array.prototype.map.call(els, el => el.getAttribute("data-value"))
-          );
-        } catch (err) {}
-      }
-      resolve(options);
     });
   }
 
@@ -375,29 +304,97 @@ class Client {
     });
   }
 
+  removeTags(page: Page): Promise<void> {
+    return new Promise(async (resolve, reject) => {
+      const selector = "div.js-tagToken";
+      try {
+        await page.waitForSelector(selector, { timeout: 1000 });
+      } catch (err) {
+        resolve();
+        return;
+      }
+      const tags = await page.$$(selector);
+      if (tags.length === 0) {
+        resolve();
+        return;
+      }
+      this.context.logger.log("remove tags:", tags.length);
+      for (const tag of tags) {
+        const button = await tag.$('button[data-action="remove-token"]');
+        await button.click();
+        try {
+          await page.waitForResponse(
+            "POST",
+            /^https:\/\/medium.com\/_\/api\/posts\/[\dabcdef]+\/tags$/,
+            this.context,
+          );
+        } catch (err) {
+          reject(err);
+          return;
+        }
+      }
+      this.context.logger.log("remove tags: complete");
+      resolve();
+    });
+  }
+
+  addTags(page: Page, tags: Array<string>): Promise<void> {
+    return new Promise(async (resolve, reject) => {
+      const selector = "div.js-tagInput span";
+      await page.waitForSelector(selector);
+      this.context.logger.log("add tags:", tags);
+      await page.click(selector);
+      for (const tag of tags) {
+        this.context.logger.log("  add tag:", tag);
+        await page.type(selector, `${tag},`);
+        try {
+          await page.waitForResponse(
+            "POST",
+            /^https:\/\/medium.com\/_\/api\/posts\/[\dabcdef]+\/tags$/,
+            this.context,
+          );
+        } catch (err) {
+          console.log("udpated error:", err);
+          reject(err);
+          return;
+        }
+      }
+      this.context.logger.log("add tags: complete");
+      resolve();
+    });
+  }
+
+  readPostOptions(page: Page): Promise<PostOptions> {
+    return new Promise(async (resolve, reject) => {
+      await this.openPostOptions(page);
+      const options = {};
+      {
+        try {
+          const selector = "div.js-tagToken";
+          await page.waitForSelector(selector, { timeout: 100 });
+          options.tags = await page.$$eval(selector, els =>
+            Array.prototype.map.call(els, el => el.getAttribute("data-value")),
+          );
+        } catch (err) {}
+      }
+      resolve(options);
+    });
+  }
+
   readPost(postId: string): Promise<{ html: string, options: PostOptions }> {
     return new Promise(async (resolve, reject) => {
+      this.context.logger.log("read post:", postId);
       const page = await this.newPage();
-      const onResponse = async res => {
-        const req = res.request();
-        if (
-          req.method !== "GET" ||
-          req.url !== `https://medium.com/p/${postId}/edit`
-        ) {
-          return;
-        }
-        page.removeListener("response", (onResponse: any));
-        if (res.status < 400) {
-          return;
-        }
-        page.close().then(() => {
-          reject(`${res.status} ${statusText(res.status)}`);
-        });
-      };
-      page.on("response", (onResponse: any));
-
       const url = `https://medium.com/p/${postId}/edit`;
       await page.goto(url, { timeout: 0 });
+      try {
+        this.context.logger.log("  wait for GET post");
+        await page.waitForResponse("GET", url, this.context);
+        this.context.logger.log("  complete to GET post");
+      } catch (err) {
+        reject(err);
+        return;
+      }
       await this.waitForLogin(page, url);
       await page.waitForNavigation({ timeout: 0, waitUntil: "load" });
       await page.waitForSelector("div.section-inner");

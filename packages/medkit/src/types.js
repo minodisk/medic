@@ -4,7 +4,7 @@ export type Browser = {
   newPage(): Promise<Page>,
   close(): Promise<void>,
   on(type: string, (e: any) => void): void,
-  removeListener(type: string, (e: any) => void): void
+  removeListener(type: string, (e: any) => void): void,
 };
 
 export type Page = {
@@ -15,12 +15,13 @@ export type Page = {
   click(selector: string): Promise<void>,
   cookies(): Promise<Array<Cookie>>,
   setCookie(...cookies: Array<Cookie>): Promise<void>,
+  setUserAgent(ua: string): Promise<void>,
   setViewport(viewport: Viewport): Promise<void>,
   goto(url: string, options?: { timeout?: number }): Promise<void>,
   waitForNavigation({ timeout: number, waitUntil: string }): Promise<void>,
   waitForSelector(
     selector: string,
-    options?: { timeout?: number }
+    options?: { timeout?: number },
   ): Promise<void>,
   $(selector: string): Promise<ElementHandle>,
   $$(selector: string): Promise<Array<ElementHandle>>,
@@ -38,18 +39,24 @@ export type Page = {
   type(
     selector: string,
     text: string,
-    options?: { delay?: number }
+    options?: { delay?: number },
   ): Promise<void>,
   // Patched
   shortcut(key: string): Promise<void>,
   setDataToClipboard(type: string, data: string): Promise<void>,
+  waitForResponse(
+    method: "OPTIONS" | "GET" | "POST" | "PUT" | "PATCH" | "DELETE",
+    url: string | RegExp,
+    context: Context,
+    options?: { timeout?: number },
+  ): Promise<void>,
   waitForPushed(re: RegExp, timeout?: number): Promise<Array<string>>,
-  waitForLogin(target: string): Promise<Array<Cookie> | void>
+  waitForLogin(target: string): Promise<Array<Cookie> | void>,
 };
 
 export type JSHandle = {
   getProperties(): Promise<Map<string, JSHandle>>,
-  asElement(): ElementHandle
+  asElement(): ElementHandle,
 };
 
 export type ElementHandle = {
@@ -58,20 +65,20 @@ export type ElementHandle = {
   asElement(): ElementHandle,
   boundingBox(): Rect,
   $(selector: string): Promise<ElementHandle>,
-  $$(selector: string): Promise<Array<ElementHandle>>
+  $$(selector: string): Promise<Array<ElementHandle>>,
 };
 
 export type Mouse = {
   move(x: number, y: number): Promise<void>,
   down(): Promise<void>,
   up(): Promise<void>,
-  click(x: number, y: number, { delay?: number }): Promise<void>
+  click(x: number, y: number, { delay?: number }): Promise<void>,
 };
 
 export type Keyboard = {
   down(key: string): Promise<void>,
   up(key: string): Promise<void>,
-  press(key: string, option?: { delay?: number }): Promise<void>
+  press(key: string, option?: { delay?: number }): Promise<void>,
 };
 
 export type Viewport = {
@@ -80,14 +87,14 @@ export type Viewport = {
   deviceScaleFactor?: number,
   isMobile?: boolean,
   hasTouch?: boolean,
-  isLandscape?: boolean
+  isLandscape?: boolean,
 };
 
 export type Rect = {
   x: number,
   y: number,
   width: number,
-  height: number
+  height: number,
 };
 
 export type Cookie = {};
@@ -97,5 +104,18 @@ export class ClipboardEvent extends Event {
 }
 
 export type PostOptions = {
-  tags?: Array<string>
+  tags?: Array<string>,
+};
+
+export type Logger = {
+  log(...messages: Array<any>): void,
+};
+
+export type Context = {
+  logger: Logger,
+  debug: boolean,
+};
+
+export type Options = {
+  cookiesPath: string,
 };

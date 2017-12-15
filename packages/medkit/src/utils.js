@@ -38,7 +38,7 @@ const statusMap = {
   "507": "Insufficient Storage",
   "508": "Loop Detected",
   "509": "Bandwidth Limit Exceeded",
-  "510": "Not Extended"
+  "510": "Not Extended",
 };
 
 exports.statusText = (status: number): string => statusMap[status] || "Unknown";

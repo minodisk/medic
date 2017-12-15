@@ -1,6 +1,6 @@
 # @minodisk/medkit
 
-SDK manipulates Medium posts.
+SDK manipulates Medium posts with headless Chromium via [GoogleChrome/puppeteer](https://github.com/GoogleChrome/puppeteer).
 
 ## Installation
 
@@ -24,12 +24,12 @@ import Client from "@minodisk/medkit";
 (async () => {
   const client = new Client();
   const postId = await client.createPost(
-    "<h3>Title</h3><h4>Subtitle</h4><p>Text</p>"
+    "<h3>Title</h3><h4>Subtitle</h4><p>Text</p>",
   );
   const html = await client.readPost(postId); // ->  "<h1>Title</h1><h2>Subtitle</h2><p>Text</p>" or "<h3>Title</h3><h4>Subtitle</h4><p>Text</p>"
   await client.updatePost(
     postId,
-    "<h3>Title</h3><h4>Subtitle</h4><p>Modified</p>"
+    "<h3>Title</h3><h4>Subtitle</h4><p>Modified</p>",
   );
   await client.destroyPost(postId);
   await client.close();
@@ -71,16 +71,3 @@ complete.
 
 `close` closes Chromium. When closing Chromium is completed, returned `Promise`
 will complete.
-
-## FAQ
-
-### How is it realized?
-
-Using with Chromium via
-[GoogleChrome/puppeteer](https://github.com/GoogleChrome/puppeteer) and operate
-Medium's page and sometime evaluate JavaScript inside the page.
-
-### Why doesn't run with headless mode?
-
-When trying to operate Medium's post edit page in headless mode, some operations
-such as paste and selection are not executed properly.
