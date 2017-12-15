@@ -3,10 +3,12 @@
 
 const program = require("commander");
 const Client = require("@minodisk/medkit");
-const { sync } = require("./post");
+const { syncPosts } = require("./post");
 
 program
-  .version("0.0.1")
+  .version("0.0.6")
+  .option("-d, --debug", "debug", false)
+  .option("-v, --verbose", "output logs", false)
   .option("-c, --cookies-path <path>", "cookies file path", "cookies.json");
 
 // program
@@ -31,8 +33,21 @@ program
   .description("creates or updates posts")
   .action(async (patterns, options) => {
     try {
-      const { cookiesPath } = options.parent;
-      await sync(new Client({ cookiesPath }), patterns);
+      const { verbose, debug, cookiesPath } = options.parent;
+      await syncPosts(
+        new Client(
+          {
+            logger: verbose
+              ? {
+                  log: (...messages: Array<any>) => console.log(...messages),
+                }
+              : null,
+            debug,
+          },
+          { cookiesPath },
+        ),
+        patterns,
+      );
     } catch (err) {
       process.stderr.write(err.toString());
     }

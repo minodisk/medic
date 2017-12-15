@@ -4,12 +4,12 @@ const yaml = require("js-yaml");
 
 type Meta = {
   id?: string,
-  tags?: Array<string>
+  tags?: Array<string>,
 };
 
 type Post = {
   meta: Meta,
-  body: string
+  body: string,
 };
 
 const isValidMeta = (meta: Meta): boolean => {
