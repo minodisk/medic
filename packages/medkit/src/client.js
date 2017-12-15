@@ -166,8 +166,10 @@ class Client {
         const el = prop.asElement();
         if (el != null) {
           const { x, y, width, height } = await el.boundingBox();
-          this.context.logger.log("  at:", x + width, y + height);
-          await page.mouse.click(x + width, y + height, { delay: 100 });
+          const right = Math.floor(x + width - 1);
+          const center = Math.floor(y + height / 2);
+          this.context.logger.log("  at:", right, center);
+          await page.mouse.click(right, center, { delay: 100 });
           await page.keyboard.press("Enter", { delay: 100 });
           await page.keyboard.press("Backspace", { delay: 100 });
         }
@@ -179,10 +181,11 @@ class Client {
         try {
           await page.waitForResponse(
             "POST",
-            /^https:\/\/medium\.com\/p\/[\dabcdef]+\/deltas$/,
+            /^https:\/\/medium\.com\/p\/[\dabcdef]+\/deltas/,
             this.context,
           );
           this.context.logger.log("  saved:", i);
+          continue;
         } catch (err) {
           if (err === "timeout") {
             this.context.logger.log("saving post complete");
