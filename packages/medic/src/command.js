@@ -6,7 +6,7 @@ const Client = require("@minodisk/medkit");
 const { syncPosts } = require("./post");
 
 program
-  .version("0.5.1")
+  .version("0.5.2")
   .option("-d, --debug", "debug", false)
   .option("-v, --verbose", "output logs", false)
   .option("-c, --cookies-path <path>", "cookies file path", "cookies.json");
