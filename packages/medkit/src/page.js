@@ -10,7 +10,17 @@ const test = (str: string, re: string | RegExp): boolean => {
   return re.test(str);
 };
 
-const enhance = {
+const patches = {
+  setContext: function(context: Context): void {
+    this.context = context;
+  },
+
+  getUserAgent: function(): Promise<string> {
+    return new Promise(async (resolve, reject) => {
+      resolve(await this.evaluate(() => navigator.userAgent));
+    });
+  },
+
   shortcut: function(key: string): Promise<void> {
     return new Promise(async (resolve, reject) => {
       await this.keyboard.down("Control");
@@ -41,43 +51,60 @@ const enhance = {
   waitForResponse(
     method: "OPTIONS" | "GET" | "POST" | "PUT" | "PATCH" | "DELETE",
     url: string | RegExp,
-    context: Context,
     options?: {
       timeout?: number,
     },
-  ): Promise<void> {
+  ): Promise<number> {
     const opts = {
       timeout: 10000,
       ...options,
     };
     return new Promise((resolve, reject) => {
-      context.logger.log("wait for response:", method, url);
+      this.context.logger.log("wait for response:", method, url);
       let timeoutId;
       if (opts.timeout > 0) {
         timeoutId = setTimeout(() => {
           this.removeListener("response", (onResponse: any));
-          context.logger.log("  timeout:", opts.timeout);
+          this.context.logger.log("  timeout:", opts.timeout);
           reject("timeout");
         }, opts.timeout);
       }
       const onResponse = async res => {
         const req = res.request();
         if (req.method !== method || !test(req.url, url)) {
-          // context.logger.log("  unmatch:", req.method, req.url);
+          // this.context.logger.log("  unmatch:", req.method, req.url);
           return;
         }
 
-        context.logger.log("  match:", req.method, req.url);
+        this.context.logger.log("  match:", req.method, req.url);
         clearTimeout(timeoutId);
         this.removeListener("response", (onResponse: any));
 
+        // if (opts.status != null) {
+        //   if (res.status !== opts.status) {
+        //     this.context.logger.log(
+        //       `  unexpected status: ${res.status} is responsed, but expected ${
+        //         opts.status
+        //       }`,
+        //     );
+        //     reject(
+        //       `unexpected status: ${res.status} is responsed, but expected ${
+        //         opts.status
+        //       }`,
+        //     );
+        //     return;
+        //   }
+        //   this.context.logger.log("  expected status:", res.status);
+        //   resolve();
+        //   return;
+        // }
         if (res.status >= 400) {
-          context.logger.log("  bad status:", res.status);
-          reject(`${res.status} ${statusText(res.status)}`);
+          this.context.logger.log("  bad status:", res.status);
+          reject(`bad status: ${res.status} is responsed`);
           return;
         }
-        context.logger.log("  good status:", res.status);
-        resolve();
+        this.context.logger.log("  good status:", res.status);
+        resolve(res.status);
       };
       this.on("response", (onResponse: any));
     });
@@ -112,5 +139,5 @@ const enhance = {
 };
 
 module.exports = function(page: any): Page {
-  return Object.assign(page, enhance);
+  return Object.assign(page, patches);
 };

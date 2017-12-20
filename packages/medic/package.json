@@ -16,6 +16,9 @@
     "format": "yarn prettier --write *.json *.md src/*.js lib/*.js",
     "prepublish": "yarn build"
   },
+  "publishConfig": {
+    "access": "public"
+  },
   "jest": {
     "transform": {
       "\\.js$": "../../bin/jest-transform"

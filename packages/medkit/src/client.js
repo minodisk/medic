@@ -75,25 +75,80 @@ class Client {
 
   newPage(): Promise<Page> {
     return new Promise(async (resolve, reject) => {
+      if (this.cookies == null) {
+        for (;;) {
+          try {
+            await stat(this.options.cookiesPath);
+            const content = await readFile(this.options.cookiesPath);
+            this.cookies = JSON.parse(content);
+            if (this.cookies != null) {
+              break;
+            }
+          } catch (err) {
+            await this.login();
+          }
+        }
+      }
+
       await this.open();
       const page = patchToPage(await this.browser.newPage());
-      const ua = await page.evaluate(() => navigator.userAgent);
-      await page.setUserAgent(ua.replace("Headless", ""));
+      page.setContext(this.context);
       await page.setViewport({
         width: 1000,
         height: 1000,
       });
-      if (this.cookies == null) {
-        try {
-          await stat(this.options.cookiesPath);
-          const content = await readFile(this.options.cookiesPath);
-          this.cookies = JSON.parse(content);
-        } catch (err) {}
-      }
-      if (this.cookies != null) {
-        await page.setCookie(...this.cookies);
-      }
+      const ua = await page.getUserAgent();
+      await page.setUserAgent(ua.replace("Headless", ""));
+      await page.setCookie(...this.cookies);
       resolve(page);
+    });
+  }
+
+  login(): Promise<void> {
+    return new Promise(async (resolve, reject) => {
+      this.context.logger.log("start to login");
+      const browser = await puppeteer.launch({ headless: false });
+      const page = patchToPage(await browser.newPage());
+      page.setContext(this.context);
+      await page.setViewport({ width: 1000, height: 1000 });
+      this.context.logger.log("  open login page");
+      await page.goto(
+        "https://medium.com/m/signin?redirect=https://medium.com/me/stats",
+      );
+      this.context.logger.log("  wait for user operation");
+      await page.waitForResponse("GET", "https://medium.com/me/stats", {
+        timeout: 0,
+      });
+      this.cookies = await page.cookies();
+      await browser.close();
+      await writeFile(this.options.cookiesPath, JSON.stringify(this.cookies));
+      this.context.logger.log("complete to login");
+      resolve();
+    });
+  }
+
+  gotoAndLogin(
+    page: Page,
+    url: string,
+    options?: { timeout?: number },
+  ): Promise<void> {
+    return new Promise(async (resolve, reject) => {
+      for (;;) {
+        try {
+          await page.goto(url, options);
+          const status = await page.waitForResponse("GET", url);
+          if (status >= 300) {
+            await this.login();
+            await page.setCookie(...this.cookies);
+            continue;
+          }
+        } catch (err) {
+          reject(err);
+          return;
+        }
+        resolve();
+        return;
+      }
     });
   }
 
@@ -138,10 +193,7 @@ class Client {
   ): Promise<void> {
     return new Promise(async (resolve, reject) => {
       await page.setDataToClipboard("text/html", html);
-      await page.goto(url, {
-        timeout: 0,
-      });
-      await this.waitForLogin(page, url);
+      await this.gotoAndLogin(page, url, { timeout: 0 });
       await this.waitForLoading(page);
       await page.focus("div.section-inner");
       await page.shortcut("a");
@@ -182,7 +234,6 @@ class Client {
           await page.waitForResponse(
             "POST",
             /^https:\/\/medium\.com\/p\/[\dabcdef]+\/deltas/,
-            this.context,
           );
           this.context.logger.log("  saved:", i);
           continue;
@@ -200,47 +251,6 @@ class Client {
         await this.updatePostOptions(page, options);
       }
       resolve();
-    });
-  }
-
-  waitForLogin(page: Page, redirect: string): Promise<void> {
-    return new Promise(async (resolve, reject) => {
-      this.context.logger.log("wait for login");
-      let loggingIn = false;
-      const onChanged = async e => {
-        try {
-          if (!loggingIn) {
-            const u = url.parse(e._url);
-            if (u.query != null) {
-              const q = qs.parse(u.query);
-              if (
-                u.host === "medium.com" &&
-                u.pathname === "/m/signin" &&
-                q.redirect === redirect
-              ) {
-                loggingIn = true;
-                return;
-              }
-            }
-          }
-          if (e._url === redirect) {
-            page.removeListener("framenavigated", (onChanged: any));
-            if (loggingIn) {
-              this.cookies = await page.cookies();
-              await writeFile(
-                this.options.cookiesPath,
-                JSON.stringify(this.cookies),
-              );
-            }
-            this.context.logger.log("complete to login");
-            resolve();
-          }
-        } catch (err) {
-          reject(err);
-          return;
-        }
-      };
-      page.on("framenavigated", (onChanged: any));
     });
   }
 
@@ -329,7 +339,6 @@ class Client {
           await page.waitForResponse(
             "POST",
             /^https:\/\/medium.com\/_\/api\/posts\/[\dabcdef]+\/tags$/,
-            this.context,
           );
         } catch (err) {
           reject(err);
@@ -354,7 +363,6 @@ class Client {
           await page.waitForResponse(
             "POST",
             /^https:\/\/medium.com\/_\/api\/posts\/[\dabcdef]+\/tags$/,
-            this.context,
           );
         } catch (err) {
           console.log("udpated error:", err);
@@ -386,27 +394,21 @@ class Client {
 
   readPost(postId: string): Promise<{ html: string, options: PostOptions }> {
     return new Promise(async (resolve, reject) => {
-      this.context.logger.log("read post:", postId);
-      const page = await this.newPage();
-      const url = `https://medium.com/p/${postId}/edit`;
-      await page.goto(url, { timeout: 0 });
       try {
-        this.context.logger.log("  wait for GET post");
-        await page.waitForResponse("GET", url, this.context);
-        this.context.logger.log("  complete to GET post");
+        this.context.logger.log("read post:", postId);
+        const page = await this.newPage();
+        const url = `https://medium.com/p/${postId}/edit`;
+        await this.gotoAndLogin(page, url, { timeout: 0 });
+        await page.waitForSelector("div.section-inner");
+        const html = await page.$eval("div.section-inner", el => {
+          return el.innerHTML;
+        });
+        const options = await this.readPostOptions(page);
+        await page.close();
+        resolve({ html, options });
       } catch (err) {
         reject(err);
-        return;
       }
-      await this.waitForLogin(page, url);
-      await page.waitForNavigation({ timeout: 0, waitUntil: "load" });
-      await page.waitForSelector("div.section-inner");
-      const html = await page.$eval("div.section-inner", el => {
-        return el.innerHTML;
-      });
-      const options = await this.readPostOptions(page);
-      await page.close();
-      resolve({ html, options });
     });
   }
 
@@ -414,8 +416,7 @@ class Client {
     return new Promise(async (resolve, reject) => {
       const page = await this.newPage();
       const url = `https://medium.com/p/${postId}/edit`;
-      await page.goto(url, { timeout: 0 });
-      await this.waitForLogin(page, url);
+      await this.gotoAndLogin(page, url, { timeout: 0 });
       {
         const selector = 'button[data-action="show-post-actions-popover"]';
         await page.waitForSelector(selector);

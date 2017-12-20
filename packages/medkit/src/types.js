@@ -41,15 +41,16 @@ export type Page = {
     text: string,
     options?: { delay?: number },
   ): Promise<void>,
-  // Patched
+  // Patchs
+  setContext(context: Context): void,
+  getUserAgent(): Promise<string>,
   shortcut(key: string): Promise<void>,
   setDataToClipboard(type: string, data: string): Promise<void>,
   waitForResponse(
     method: "OPTIONS" | "GET" | "POST" | "PUT" | "PATCH" | "DELETE",
     url: string | RegExp,
-    context: Context,
     options?: { timeout?: number },
-  ): Promise<void>,
+  ): Promise<number>,
   waitForPushed(re: RegExp, timeout?: number): Promise<Array<string>>,
   waitForLogin(target: string): Promise<Array<Cookie> | void>,
 };

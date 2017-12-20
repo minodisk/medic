@@ -2,15 +2,18 @@
 
 const cheerio = require("cheerio");
 const Client = require("../src/client");
-const { removeFile, wait } = require("../src/utils");
+const { stat, removeFile, wait } = require("../src/utils");
 
 jest.setTimeout(60000);
 
-describe("CRUD post", () => {
-  let postId;
+describe.skip("login", () => {
   let client: Client;
 
   beforeAll(async () => {
+    try {
+      await stat("cookis.json");
+      await removeFile("cookies.json");
+    } catch (err) {}
     client = new Client({
       logger: {
         log: (...messages: Array<any>) => console.log(...messages),
@@ -23,7 +26,33 @@ describe("CRUD post", () => {
     await client.close();
   });
 
-  it(`create and read`, async () => {
+  it("should create cookies file", async () => {
+    await client.login();
+  });
+});
+
+describe("CRUD post", () => {
+  let postId;
+  let client: Client;
+
+  beforeAll(async () => {
+    try {
+      await stat("cookis.json");
+      await removeFile("cookies.json");
+    } catch (err) {}
+    client = new Client({
+      logger: {
+        log: (...messages: Array<any>) => console.log(...messages),
+      },
+    });
+  });
+
+  afterAll(async () => {
+    console.log("after all");
+    await client.close();
+  });
+
+  it("create and read", async () => {
     expect.assertions(4);
 
     const title = "Test for mediumn.createPost()";
@@ -49,7 +78,7 @@ describe("CRUD post", () => {
     expect(postId).not.toBeUndefined();
   });
 
-  it(`update and read`, async () => {
+  it("update and read", async () => {
     expect.assertions(4);
 
     const title = "Test for mediumn.updatePost()";
@@ -72,10 +101,12 @@ describe("CRUD post", () => {
     expect(options.tags).toEqual(["Medic", "Updated"]);
   });
 
-  it(`destroy`, async () => {
+  it("destroy", async () => {
     expect.assertions(1);
 
     await client.destroyPost(postId);
-    await expect(client.readPost(postId)).toMatch("410 Gone");
+    await expect(client.readPost(postId)).rejects.toMatch(
+      "bad status: 410 is responsed",
+    );
   });
 });

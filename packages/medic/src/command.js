@@ -3,10 +3,11 @@
 
 const program = require("commander");
 const Client = require("@minodisk/medkit");
-const { syncPosts } = require("./post");
+const sync = require("./sync");
+const { version } = require("../package.json");
 
 program
-  .version("0.5.2")
+  .version(version)
   .option("-d, --debug", "debug", false)
   .option("-v, --verbose", "output logs", false)
   .option("-c, --cookies-path <path>", "cookies file path", "cookies.json");
@@ -33,21 +34,7 @@ program
   .description("creates or updates posts")
   .action(async (patterns, options) => {
     try {
-      const { verbose, debug, cookiesPath } = options.parent;
-      await syncPosts(
-        new Client(
-          {
-            logger: verbose
-              ? {
-                  log: (...messages: Array<any>) => console.log(...messages),
-                }
-              : null,
-            debug,
-          },
-          { cookiesPath },
-        ),
-        patterns,
-      );
+      await sync(patterns, options);
     } catch (err) {
       process.stderr.write(err.toString());
     }
@@ -56,7 +43,7 @@ program
     process.stdout.write(`
   Examples:
 
-    medic sync articles/
+    medic sync articles/*.md
     medic sync articles/example.md
     medic sync $(git diff --name-only)
 `);
