@@ -1,27 +1,35 @@
 // @flow
 
 const { statusText } = require("./utils");
-import type { Page, ClipboardEvent, Cookie, Logger, Context } from "./types";
+const pathToRegexp = require("path-to-regexp");
+import type {
+  Page,
+  ClipboardEvent,
+  Cookie,
+  Logger,
+  Context,
+  Key,
+} from "./types";
 
-const test = (str: string, re: string | RegExp): boolean => {
-  if (typeof re === "string") {
-    return str === re;
-  }
-  return re.test(str);
+const mapKeys = (keys: Array<Key>, result: Array<string>) => {
+  const map = {};
+  keys.forEach((key, i) => {
+    const value = result[i + 1];
+    if (value != null) {
+      map[key.name] = value;
+    }
+  });
+  return map;
 };
 
 const patches = {
-  setContext: function(context: Context): void {
-    this.context = context;
-  },
-
-  getUserAgent: function(): Promise<string> {
+  getUserAgent(): Promise<string> {
     return new Promise(async (resolve, reject) => {
       resolve(await this.evaluate(() => navigator.userAgent));
     });
   },
 
-  shortcut: function(key: string): Promise<void> {
+  shortcut(key: string): Promise<void> {
     return new Promise(async (resolve, reject) => {
       await this.keyboard.down("Control");
       await this.keyboard.press(key, { delay: 100 });
@@ -30,7 +38,7 @@ const patches = {
     });
   },
 
-  setDataToClipboard: function(type: string, data: string) {
+  setDataToClipboard(type: string, data: string) {
     return new Promise(async (resolve, reject) => {
       await this.evaluate(
         (t, d) => {
@@ -50,94 +58,84 @@ const patches = {
 
   waitForResponse(
     method: "OPTIONS" | "GET" | "POST" | "PUT" | "PATCH" | "DELETE",
-    url: string | RegExp,
+    url: string,
     options?: {
       timeout?: number,
     },
-  ): Promise<number> {
-    const opts = {
-      timeout: 10000,
-      ...options,
-    };
+    logger?: Logger,
+  ): Promise<{ status: number, result: Object }> {
     return new Promise((resolve, reject) => {
-      this.context.logger.log("wait for response:", method, url);
+      const keys = [];
+      const re = pathToRegexp(url, keys);
+      const opts = {
+        timeout: 10000,
+        ...options,
+      };
+
       let timeoutId;
       if (opts.timeout > 0) {
         timeoutId = setTimeout(() => {
           this.removeListener("response", (onResponse: any));
-          this.context.logger.log("  timeout:", opts.timeout);
           reject("timeout");
         }, opts.timeout);
       }
+
       const onResponse = async res => {
         const req = res.request();
-        if (req.method !== method || !test(req.url, url)) {
-          // this.context.logger.log("  unmatch:", req.method, req.url);
+        const result = re.exec(req.url);
+        if (req.method !== method || result == null) {
           return;
         }
-
-        this.context.logger.log("  match:", req.method, req.url);
         clearTimeout(timeoutId);
         this.removeListener("response", (onResponse: any));
-
-        // if (opts.status != null) {
-        //   if (res.status !== opts.status) {
-        //     this.context.logger.log(
-        //       `  unexpected status: ${res.status} is responsed, but expected ${
-        //         opts.status
-        //       }`,
-        //     );
-        //     reject(
-        //       `unexpected status: ${res.status} is responsed, but expected ${
-        //         opts.status
-        //       }`,
-        //     );
-        //     return;
-        //   }
-        //   this.context.logger.log("  expected status:", res.status);
-        //   resolve();
-        //   return;
-        // }
         if (res.status >= 400) {
-          this.context.logger.log("  bad status:", res.status);
           reject(`bad status: ${res.status} is responsed`);
           return;
         }
-        this.context.logger.log("  good status:", res.status);
-        resolve(res.status);
+        resolve({ status: res.status, result: mapKeys(keys, result) });
       };
       this.on("response", (onResponse: any));
     });
   },
 
-  waitForPushed: function(re: RegExp, timeout: number = 0) {
+  // Workaround
+  // Page.prototype.waitForNavigation doens't work and 'framenavigated' event isn't fired when the url is changed via History API.
+  // In this case Page.url() doens't work too.
+  // See this issue about this problem: https://github.com/GoogleChrome/puppeteer/issues/257
+  waitForURL(
+    url: string,
+    options?: { timeout?: number },
+  ): Promise<{ result: Object }> {
     return new Promise((resolve, reject) => {
-      // Workaround
-      // Page.prototype.waitForNavigation doens't work and 'framenavigated' event isn't fired when the url is changed via History API.
-      // See this issue about this problem: https://github.com/GoogleChrome/puppeteer/issues/257
-      const intervalId = setInterval(async () => {
-        const url = await this.evaluate(() => location.href);
-        const matched = url.match(re);
-        if (matched == null) {
-          return;
-        }
-        clearInterval(intervalId);
-        if (timeoutId != null) {
-          clearTimeout(timeoutId);
-        }
-        resolve(matched);
-      }, 100);
+      const keys = [];
+      const re = pathToRegexp(url, keys);
+      const opts = {
+        timeout: 10000,
+        ...options,
+      };
+
       let timeoutId;
-      if (timeout != null && timeout > 0) {
+      if (opts.timeout > 0) {
         timeoutId = setTimeout(() => {
           clearInterval(intervalId);
-          reject(`waiting failed: timeout ${timeout}ms exceeded`);
-        }, timeout);
+          reject("timeout");
+        }, opts.timeout);
       }
+
+      const intervalId = setInterval(async () => {
+        const url = await this.evaluate(() => window.location.href);
+        const result = re.exec(url);
+        if (result == null) {
+          return;
+        }
+        clearTimeout(timeoutId);
+        clearInterval(intervalId);
+        resolve({ result: mapKeys(keys, result) });
+      }, 100);
     });
   },
 };
 
-module.exports = function(page: any): Page {
+module.exports = (page: any): Page => {
   return Object.assign(page, patches);
 };

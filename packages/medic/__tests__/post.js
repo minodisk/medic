@@ -1,19 +1,15 @@
 // @flow
 
-const {readPost, syncPosts, destroyPost} = require('../src');
+const { fetch, sync, rm } = require("../src");
 
 jest.setTimeout(60000);
 
 let client;
 const postIds = [];
 
-beforeAll(() => {
-  client = new Client();
-});
-
-describe('syncPosts', () => {
-  it('should create a post', async () => {
-    const postId = await syncPosts(
+describe("sync", () => {
+  it("should create a post", async () => {
+    const postId = await sync(
       client,
       `# Title
 ## Subtitle
@@ -37,10 +33,10 @@ Text
   });
 });
 
-describe('destroyPost', () => {
-  it('destroys post', async () => {
+describe("rm", () => {
+  it("destroys post", async () => {
     for (const id of postIds) {
-      await destroyPost(client, id);
+      await rm(client, id);
     }
   });
 });

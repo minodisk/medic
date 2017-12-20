@@ -7,8 +7,7 @@
   "author": "Daisuke Mino <daisuke.mino@gmail.com>",
   "license": "MIT",
   "scripts": {
-    "build":
-      "rm -rf lib/ && yarn flow-remove-types -d lib/ src/ && yarn format",
+    "build": "rm -rf lib/ && yarn flow-remove-types -d lib/ src/ && yarn format",
     "test": "yarn jest",
     "format": "yarn prettier --write *.json *.md src/*.js lib/*.js",
     "prepublish": "yarn build"
@@ -22,6 +21,7 @@
     }
   },
   "dependencies": {
+    "path-to-regexp": "^2.1.0",
     "puppeteer": "^0.13.0"
   },
   "devDependencies": {

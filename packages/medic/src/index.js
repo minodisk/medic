@@ -1,7 +1,11 @@
 // @flow
 
-const post = require("./post");
+const fetch = require("./fetch");
+const sync = require("./sync");
+const rm = require("./rm");
 
 module.exports = {
-  ...post,
+  fetch,
+  sync,
+  rm,
 };

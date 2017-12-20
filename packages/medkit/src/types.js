@@ -18,7 +18,10 @@ export type Page = {
   setUserAgent(ua: string): Promise<void>,
   setViewport(viewport: Viewport): Promise<void>,
   goto(url: string, options?: { timeout?: number }): Promise<void>,
-  waitForNavigation({ timeout: number, waitUntil: string }): Promise<void>,
+  waitForNavigation({
+    timeout?: number,
+    waitUntil?: "load" | "domcontentloaded" | "networkidle0" | "networkidle2",
+  }): Promise<void>,
   waitForSelector(
     selector: string,
     options?: { timeout?: number },
@@ -27,6 +30,14 @@ export type Page = {
   $$(selector: string): Promise<Array<ElementHandle>>,
   $eval<T>(selector: string, (e: HTMLElement) => T): Promise<T>,
   $$eval<T>(selector: string, (e: Array<HTMLElement>) => T): Promise<T>,
+  waitForFunction(
+    pageFunction: () => boolean,
+    options?: {
+      polling?: "raf" | "mutation",
+      timeout?: number,
+    },
+    ...args: Array<any>
+  ): Promise<void>,
   evaluate<T>(() => T): Promise<T>,
   evaluate<T, U>((U) => T, u: U): Promise<T>,
   evaluate<T, U, V>((U, V) => T, u: U, v: V): Promise<T>,
@@ -41,23 +52,28 @@ export type Page = {
     text: string,
     options?: { delay?: number },
   ): Promise<void>,
+  url(): Promise<string>,
   // Patchs
-  setContext(context: Context): void,
   getUserAgent(): Promise<string>,
   shortcut(key: string): Promise<void>,
   setDataToClipboard(type: string, data: string): Promise<void>,
   waitForResponse(
     method: "OPTIONS" | "GET" | "POST" | "PUT" | "PATCH" | "DELETE",
-    url: string | RegExp,
+    url: string,
     options?: { timeout?: number },
-  ): Promise<number>,
-  waitForPushed(re: RegExp, timeout?: number): Promise<Array<string>>,
+    logger?: Logger,
+  ): Promise<{ status: number, result: Object }>,
+  waitForURL(
+    url: string,
+    options?: { timeout?: number },
+  ): Promise<{ result: Object }>,
   waitForLogin(target: string): Promise<Array<Cookie> | void>,
 };
 
 export type JSHandle = {
   getProperties(): Promise<Map<string, JSHandle>>,
   asElement(): ElementHandle,
+  jsonValue(): Promise<any>,
 };
 
 export type ElementHandle = {
@@ -67,6 +83,7 @@ export type ElementHandle = {
   boundingBox(): Rect,
   $(selector: string): Promise<ElementHandle>,
   $$(selector: string): Promise<Array<ElementHandle>>,
+  getProperty(propertyName: string): Promise<JSHandle>,
 };
 
 export type Mouse = {
@@ -109,14 +126,22 @@ export type PostOptions = {
 };
 
 export type Logger = {
-  log(...messages: Array<any>): void,
+  succeed(text?: string): void,
+  fail(text?: string): void,
+  warn(text?: string): void,
+  info(text?: string): void,
+  log(text?: string): void,
 };
 
 export type Context = {
-  logger: Logger,
+  startLog(message: string): Logger,
   debug: boolean,
 };
 
 export type Options = {
   cookiesPath: string,
+};
+
+export type Key = {
+  name: string,
 };

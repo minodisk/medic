@@ -14,15 +14,10 @@ describe.skip("login", () => {
       await stat("cookis.json");
       await removeFile("cookies.json");
     } catch (err) {}
-    client = new Client({
-      logger: {
-        log: (...messages: Array<any>) => console.log(...messages),
-      },
-    });
+    client = new Client();
   });
 
   afterAll(async () => {
-    console.log("after all");
     await client.close();
   });
 
@@ -40,15 +35,10 @@ describe("CRUD post", () => {
       await stat("cookis.json");
       await removeFile("cookies.json");
     } catch (err) {}
-    client = new Client({
-      logger: {
-        log: (...messages: Array<any>) => console.log(...messages),
-      },
-    });
+    client = new Client();
   });
 
   afterAll(async () => {
-    console.log("after all");
     await client.close();
   });
 

@@ -1,36 +1,18 @@
 // @flow
 
 const Client = require("@minodisk/medkit");
+const createClient = require("./client");
 const { md2html } = require("@minodisk/medmd");
 const { toPost, toText } = require("./format");
 const { readFile, writeFile, glob } = require("./utils");
+import type { SyncOptions } from "./types";
 
 module.exports = function sync(
   patterns: Array<string>,
-  options: {
-    parent: {
-      debug: boolean,
-      verbose: boolean,
-      cookiesPath: string,
-    },
-  },
+  options: SyncOptions,
 ): Promise<void> {
   return new Promise(async (resolve, reject) => {
-    const { verbose, debug, cookiesPath } = options.parent;
-    await syncPosts(
-      new Client(
-        {
-          logger: verbose
-            ? {
-                log: (...messages: Array<any>) => console.log(...messages),
-              }
-            : null,
-          debug,
-        },
-        { cookiesPath },
-      ),
-      patterns,
-    );
+    await syncPosts(createClient(options.parent), patterns);
   });
 };
 
@@ -51,8 +33,6 @@ const syncPost = (client: Client, path: string): Promise<void> => {
     const post = toPost(text);
     const html = await md2html(post.body);
 
-    client.context.logger.log("sync post:", html);
-
     const { id, ...options } = post.meta;
     if (id == null) {
       const postId = await client.createPost(html, options);
@@ -63,6 +43,7 @@ const syncPost = (client: Client, path: string): Promise<void> => {
       await client.updatePost(id, html, options);
     }
     await client.close();
+
     resolve();
   });
 };

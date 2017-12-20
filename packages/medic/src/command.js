@@ -2,7 +2,6 @@
 // @flow
 
 const program = require("commander");
-const Client = require("@minodisk/medkit");
 const sync = require("./sync");
 const { version } = require("../package.json");
 
