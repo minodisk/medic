@@ -1,6 +1,6 @@
 {
   "name": "@minodisk/medic",
-  "version": "0.6.1",
+  "version": "0.6.4",
   "description": "CLI manipulates Medium posts with markdown files",
   "main": "lib/index.js",
   "bin": {
@@ -10,7 +10,8 @@
   "author": "Daisuke Mino <daisuke.mino@gmail.com>",
   "license": "MIT",
   "scripts": {
-    "build": "rm -rf lib/ && yarn flow-remove-types -d lib/ src/ && yarn format",
+    "build":
+      "rm -rf lib/ && yarn flow-remove-types -d lib/ src/ && yarn format",
     "test": "yarn jest",
     "format": "yarn prettier --write *.json *.md src/*.js lib/*.js",
     "prepublish": "yarn build"
@@ -24,8 +25,8 @@
     }
   },
   "dependencies": {
-    "@minodisk/medkit": "^0.5.2",
-    "@minodisk/medmd": "^0.5.2",
+    "@minodisk/medkit": "^0.6.4",
+    "@minodisk/medmd": "^0.6.4",
     "commander": "^2.12.2",
     "glob": "^7.1.2",
     "js-yaml": "^3.10.0",

@@ -8,7 +8,8 @@
     "format-root": "yarn prettier --write *.json *.md",
     "format": "yarn format-root && yarn workspace @minodisk/medic format && yarn workspace @minodisk/medkit format && yarn workspace @minodisk/medmd format",
     "build": "yarn format-root && yarn workspace @minodisk/medic build && yarn workspace @minodisk/medkit build && yarn workspace @minodisk/medmd build",
-    "test": "yarn workspace @minodisk/medic test && yarn workspace @minodisk/medkit test && yarn workspace @minodisk/medmd test"
+    "test": "yarn workspace @minodisk/medic test && yarn workspace @minodisk/medkit test && yarn workspace @minodisk/medmd test",
+    "publishall": "yarn workspace @minodisk/medic publish -- --access=public --no-git-tag-version && yarn workspace @minodisk/medkit publish -- --access=public --no-git-tag-version && yarn workspace @minodisk/medmd publish -- --access=public --no-git-tag-version"
   },
   "devDependencies": {
     "lerna": "^2.5.1"
