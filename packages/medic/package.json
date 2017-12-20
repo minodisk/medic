@@ -1,6 +1,6 @@
 {
   "name": "@minodisk/medic",
-  "version": "0.6.0",
+  "version": "0.6.1",
   "description": "CLI manipulates Medium posts with markdown files",
   "main": "lib/index.js",
   "bin": {
@@ -10,8 +10,7 @@
   "author": "Daisuke Mino <daisuke.mino@gmail.com>",
   "license": "MIT",
   "scripts": {
-    "build":
-      "rm -rf lib/ && yarn flow-remove-types -d lib/ src/ && yarn format",
+    "build": "rm -rf lib/ && yarn flow-remove-types -d lib/ src/ && yarn format",
     "test": "yarn jest",
     "format": "yarn prettier --write *.json *.md src/*.js lib/*.js",
     "prepublish": "yarn build"
