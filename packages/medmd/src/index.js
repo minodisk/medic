@@ -180,12 +180,12 @@ const transformMDAST = options => {
     tree.children = transform(tree.children);
 
     const c0 = tree.children[0];
-    if (c0.type !== "heading" || c0.depth !== 1) {
+    if (c0 == null || c0.type !== "heading" || c0.depth !== 1) {
       return;
     }
     c0.depth = 3;
     const c1 = tree.children[1];
-    if (c1.type !== "heading" || c1.depth !== 2) {
+    if (c1 == null || c1.type !== "heading" || c1.depth !== 2) {
       return;
     }
     c1.depth = 4;
