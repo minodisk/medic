@@ -1,25 +1,25 @@
 // @flow
 
-const {toPost, toText} = require('../src/utils');
+const { toPost, toText } = require("../src/format");
 
-describe('toPost', () => {
+describe("toPost", () => {
   [
     {
-      name: 'with empty text',
+      name: "with empty text",
       text: ``,
       want: {
-        header: {},
+        meta: {},
         body: ``,
       },
     },
     {
-      name: 'with empty header',
+      name: "with empty meta",
       text: `---
 ---
 Body
 `,
       want: {
-        header: {},
+        meta: {},
         body: `---
 ---
 Body
@@ -27,13 +27,13 @@ Body
       },
     },
     {
-      name: "with header dosn't contain expedted keys",
+      name: "with meta dosn't contain expedted keys",
       text: `---
 tags
 ---
 Body`,
       want: {
-        header: {},
+        meta: {},
         body: `---
 tags
 ---
@@ -41,20 +41,20 @@ Body`,
       },
     },
     {
-      name: 'with header contains expected keys',
+      name: "with meta contains expected keys",
       text: `---
 tags:
 ---
 Body`,
       want: {
-        header: {
+        meta: {
           tags: null,
         },
         body: `Body`,
       },
     },
     {
-      name: 'with tags in header',
+      name: "with tags in meta",
       text: `---
 tags:
 - Medium
@@ -63,14 +63,14 @@ tags:
 ---
 Body`,
       want: {
-        header: {
-          tags: ['Medium', 'SDK', 'Node.js'],
+        meta: {
+          tags: ["Medium", "SDK", "Node.js"],
         },
         body: `Body`,
       },
     },
     {
-      name: 'ignores empty line at the header of body',
+      name: "ignores empty line at the meta of body",
       text: `---
 tags:
 - Medium
@@ -80,8 +80,8 @@ tags:
 
 Body`,
       want: {
-        header: {
-          tags: ['Medium', 'SDK', 'Node.js'],
+        meta: {
+          tags: ["Medium", "SDK", "Node.js"],
         },
         body: `Body`,
       },
@@ -93,29 +93,29 @@ Body`,
   });
 });
 
-describe('toText', () => {
+describe("toText", () => {
   [
     {
-      name: 'empty',
+      name: "empty",
       post: {
-        header: {},
+        meta: {},
         body: ``,
       },
       want: ``,
     },
     {
-      name: 'empty header',
+      name: "empty meta",
       post: {
-        header: {},
+        meta: {},
         body: `Body`,
       },
       want: `Body`,
     },
     {
-      name: 'with id',
+      name: "with id",
       post: {
-        header: {
-          id: 'abcde',
+        meta: {
+          id: "abcde",
         },
         body: `Body`,
       },

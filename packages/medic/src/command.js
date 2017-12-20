@@ -7,8 +7,7 @@ const { version } = require("../package.json");
 
 program
   .version(version)
-  .option("-d, --debug", "debug", false)
-  .option("-v, --verbose", "output logs", false)
+  .option("-d, --debug", "not to use headless Chromium", false)
   .option("-c, --cookies-path <path>", "cookies file path", "cookies.json");
 
 // program
@@ -31,13 +30,6 @@ program
 program
   .command("sync <patterns...>")
   .description("creates or updates posts")
-  .action(async (patterns, options) => {
-    try {
-      await sync(patterns, options);
-    } catch (err) {
-      process.stderr.write(err.toString());
-    }
-  })
   .on("--help", () => {
     process.stdout.write(`
   Examples:
@@ -46,6 +38,13 @@ program
     medic sync articles/example.md
     medic sync $(git diff --name-only)
 `);
+  })
+  .action(async (patterns, options) => {
+    try {
+      await sync(patterns, options);
+    } catch (err) {
+      process.stderr.write(err.toString());
+    }
   });
 
 // program

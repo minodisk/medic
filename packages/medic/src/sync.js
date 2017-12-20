@@ -7,12 +7,13 @@ const { toPost, toText } = require("./format");
 const { readFile, writeFile, glob } = require("./utils");
 import type { SyncOptions } from "./types";
 
-module.exports = function sync(
+module.exports = (
   patterns: Array<string>,
   options: SyncOptions,
-): Promise<void> {
+): Promise<void> => {
   return new Promise(async (resolve, reject) => {
     await syncPosts(createClient(options.parent), patterns);
+    resolve();
   });
 };
 
@@ -20,10 +21,15 @@ const syncPosts = (client: Client, patterns: Array<string>): Promise<void> => {
   return new Promise(async (resolve, reject) => {
     for (const pattern of patterns) {
       const paths = await glob(pattern);
+      if (paths.length === 0) {
+        reject(`no matched file for the pattern: ${pattern}`);
+        return;
+      }
       for (const path of paths) {
         await syncPost(client, path);
       }
     }
+    resolve();
   });
 };
 
@@ -32,7 +38,6 @@ const syncPost = (client: Client, path: string): Promise<void> => {
     const text = await readFile(path);
     const post = toPost(text);
     const html = await md2html(post.body);
-
     const { id, ...options } = post.meta;
     if (id == null) {
       const postId = await client.createPost(html, options);
@@ -43,7 +48,6 @@ const syncPost = (client: Client, path: string): Promise<void> => {
       await client.updatePost(id, html, options);
     }
     await client.close();
-
     resolve();
   });
 };
