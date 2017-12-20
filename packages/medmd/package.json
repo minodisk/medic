@@ -14,8 +14,7 @@
     "prepublish": "yarn build"
   },
   "publishConfig": {
-    "access": "public",
-    "no-git-tag-version": true
+    "access": "public"
   },
   "jest": {
     "transform": {
