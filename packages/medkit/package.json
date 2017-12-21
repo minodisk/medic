@@ -13,9 +13,6 @@
     "format": "yarn prettier --write *.json *.md src/*.js lib/*.js",
     "prepublish": "yarn build"
   },
-  "publishConfig": {
-    "access": "public"
-  },
   "jest": {
     "transform": {
       "\\.js$": "../../bin/jest-transform"
@@ -30,6 +27,6 @@
     "flow-bin": "^0.59.0",
     "flow-remove-types": "^1.2.3",
     "jest": "^21.2.1",
-    "prettier": "^1.8.2"
+    "prettier": "^1.9.2"
   }
 }

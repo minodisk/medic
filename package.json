@@ -1,17 +1,20 @@
 {
   "private": true,
   "name": "medic",
-  "workspaces": [
-    "packages/*"
-  ],
+  "version": "0.6.4",
+  "workspaces": ["packages/*"],
   "scripts": {
     "format-root": "yarn prettier --write *.json *.md",
-    "format": "yarn format-root && yarn workspace @minodisk/medic format && yarn workspace @minodisk/medkit format && yarn workspace @minodisk/medmd format",
-    "build": "yarn format-root && yarn workspace @minodisk/medic build && yarn workspace @minodisk/medkit build && yarn workspace @minodisk/medmd build",
-    "test": "yarn workspace @minodisk/medic test && yarn workspace @minodisk/medkit test && yarn workspace @minodisk/medmd test",
-    "publishall": "yarn workspace @minodisk/medic publish -- --access=public --no-git-tag-version && yarn workspace @minodisk/medkit publish -- --access=public --no-git-tag-version && yarn workspace @minodisk/medmd publish -- --access=public --no-git-tag-version"
+    "format":
+      "yarn format-root && yarn workspace @minodisk/medic format && yarn workspace @minodisk/medkit format && yarn workspace @minodisk/medmd format",
+    "build":
+      "yarn format-root && yarn workspace @minodisk/medic build && yarn workspace @minodisk/medkit build && yarn workspace @minodisk/medmd build",
+    "test":
+      "yarn workspace @minodisk/medic test && yarn workspace @minodisk/medkit test && yarn workspace @minodisk/medmd test"
   },
   "devDependencies": {
-    "lerna": "^2.5.1"
+    "commander": "^2.12.2",
+    "prettier": "^1.9.2",
+    "semver": "^5.4.1"
   }
 }
