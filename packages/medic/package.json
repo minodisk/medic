@@ -1,6 +1,6 @@
 {
   "name": "@minodisk/medic",
-  "version": "0.6.4",
+  "version": "0.6.13",
   "description": "CLI manipulates Medium posts with markdown files",
   "main": "lib/index.js",
   "bin": {
@@ -22,8 +22,8 @@
     }
   },
   "dependencies": {
-    "@minodisk/medkit": "^0.6.4",
-    "@minodisk/medmd": "^0.6.4",
+    "@minodisk/medkit": "0.6.13",
+    "@minodisk/medmd": "0.6.13",
     "commander": "^2.12.2",
     "glob": "^7.1.2",
     "js-yaml": "^3.10.0",

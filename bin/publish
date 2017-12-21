@@ -9,19 +9,25 @@ const { join } = require("path");
 const { writeFile } = require("../packages/medic/lib/utils");
 const cp = require("child_process");
 
-const exec = command =>
+const spawn = command =>
   new Promise(async (resolve, reject) => {
-    cp.exec(
-      command,
-      {
-        cwd: join(__dirname, ".."),
-      },
-      (err, stdout, stderr) => {
-        if (err) return reject(err);
-        if (stderr) return reject(stderr);
-        resolve(stdout);
-      },
-    );
+    const commands = command.split(" ");
+    const cmd = cp.spawn(commands.shift(), commands, {
+      cwd: join(__dirname, ".."),
+    });
+    cmd.stdout.on("data", data => {
+      process.stdout.write(data);
+    });
+    cmd.stderr.on("data", data => {
+      process.stderr.write(data);
+    });
+    cmd.on("close", code => {
+      if (code > 0) {
+        reject(code);
+        return;
+      }
+      resolve();
+    });
   });
 
 program
@@ -34,46 +40,50 @@ program
   .parse(process.argv);
 
 (async () => {
-  const version = semver.inc(mainPkg.version, "patch");
-  mainPkg.version = version;
-  medicPkg.dependencies["@minodisk/medkit"] = version;
-  medicPkg.dependencies["@minodisk/medmd"] = version;
+  try {
+    const version = semver.inc(mainPkg.version, "patch");
+    mainPkg.version = version;
+    medicPkg.dependencies["@minodisk/medkit"] = version;
+    medicPkg.dependencies["@minodisk/medmd"] = version;
 
-  const options = await prettier.resolveConfig(
-    join(__dirname, "../.prettierrc"),
-  );
-  const opts = {
-    ...options,
-    parser: "json",
-  };
+    const options = await prettier.resolveConfig(
+      join(__dirname, "../.prettierrc"),
+    );
+    const opts = {
+      ...options,
+      parser: "json",
+    };
+    await writeFile(
+      join(__dirname, "../package.json"),
+      prettier.format(JSON.stringify(mainPkg), opts),
+    );
+    await writeFile(
+      join(__dirname, "../packages/medic/package.json"),
+      prettier.format(JSON.stringify(medicPkg), opts),
+    );
 
-  await writeFile(
-    join(__dirname, "../package.json"),
-    prettier.format(JSON.stringify(mainPkg), opts),
-  );
-
-  await writeFile(
-    join(__dirname, "../packages/medic/package.json"),
-    prettier.format(JSON.stringify(medicPkg), opts),
-  );
-
-  console.log(
-    await exec(
-      `yarn workspace @minodisk/medic publish -- --access=public --no-git-tag-version`,
-    ),
-  );
-  console.log(
-    await exec(
-      `yarn workspace @minodisk/medkit publish -- --access=public --no-git-tag-version`,
-    ),
-  );
-  console.log(
-    await exec(
-      `yarn workspace @minodisk/medmd publish -- --access=public --no-git-tag-version`,
-    ),
-  );
-  console.log(await exec(`git commit -m v${version}`));
-  console.log(await exec(`git tag v${version}`));
-  console.log(await exec(`git push`));
-  console.log(await exec(`git push --tags`));
+    console.log(
+      await spawn(
+        `yarn workspace @minodisk/medic publish -- --non-interactive --access=public --no-git-tag-version --new-version ${version}`,
+      ),
+    );
+    console.log(
+      await spawn(
+        `yarn workspace @minodisk/medkit publish -- --non-interactive --access=public --no-git-tag-version --new-version ${version}`,
+      ),
+    );
+    console.log(
+      await spawn(
+        `yarn workspace @minodisk/medmd publish -- --non-interactive --access=public --no-git-tag-version --new-version ${version}`,
+      ),
+    );
+    console.log(await spawn(`git add package.json`));
+    console.log(await spawn(`git commit -m v${version}`));
+    console.log(await spawn(`git tag v${version}`));
+    console.log(await spawn(`git push`));
+    console.log(await spawn(`git push --tags`));
+  } catch (err) {
+    console.error("--------");
+    console.error(err);
+  }
 })();
