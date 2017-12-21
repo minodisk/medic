@@ -32,6 +32,7 @@ program
   .description("creates or updates posts")
   .on("--help", () => {
     process.stdout.write(`
+
   Examples:
 
     medic sync articles/*.md

@@ -8,7 +8,7 @@ Converter markdown to HTML for Medium.
 
 `md2html` transform `md` to HTML.
 
-## Supported Markdown Format
+## Supported formats
 
 * Block Elements
   * [x] Paragraphs and Line Breaks
