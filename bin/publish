@@ -23,7 +23,7 @@ const spawn = command =>
     });
     cmd.on("close", code => {
       if (code > 0) {
-        reject(code);
+        reject(`'${command}' exited with code ${code}`);
         return;
       }
       resolve();
@@ -62,28 +62,21 @@ program
       prettier.format(JSON.stringify(medicPkg), opts),
     );
 
-    console.log(
-      await spawn(
-        `yarn workspace @minodisk/medic publish -- --non-interactive --access=public --no-git-tag-version --new-version ${version}`,
-      ),
+    await spawn(
+      `yarn workspace @minodisk/medic publish -- --non-interactive --access=public --no-git-tag-version --new-version ${version}`,
     );
-    console.log(
-      await spawn(
-        `yarn workspace @minodisk/medkit publish -- --non-interactive --access=public --no-git-tag-version --new-version ${version}`,
-      ),
+    await spawn(
+      `yarn workspace @minodisk/medkit publish -- --non-interactive --access=public --no-git-tag-version --new-version ${version}`,
     );
-    console.log(
-      await spawn(
-        `yarn workspace @minodisk/medmd publish -- --non-interactive --access=public --no-git-tag-version --new-version ${version}`,
-      ),
+    await spawn(
+      `yarn workspace @minodisk/medmd publish -- --non-interactive --access=public --no-git-tag-version --new-version ${version}`,
     );
-    console.log(await spawn(`git add package.json`));
-    console.log(await spawn(`git commit -m v${version}`));
-    console.log(await spawn(`git tag v${version}`));
-    console.log(await spawn(`git push`));
-    console.log(await spawn(`git push --tags`));
+    await spawn(`git add package.json`);
+    await spawn(`git commit -m "v${version}"`);
+    await spawn(`git tag v${version}`);
+    await spawn(`git push`);
+    await spawn(`git push --tags`);
   } catch (err) {
-    console.error("--------");
     console.error(err);
   }
 })();
