@@ -232,7 +232,7 @@ class Client {
       await this.waitForLoading(page);
       await this.waitForInitializing(page);
       await this.pasteHTML(page, html);
-      await this.embedTweets(page);
+      await this.embed(page);
       await this.savePost(page);
       if (options != null && Object.keys(options).length > 0) {
         await this.openPostOptions(page);
@@ -280,36 +280,42 @@ class Client {
     });
   }
 
-  // Gist: https://gist.github.com/minodisk/cbb2f305884b82d5b22aaa9fc1e3239d
-  // Medium: https://medium.com/@minodisk/dactyl-%E3%82%AD%E3%83%BC%E3%83%9C%E3%83%BC%E3%83%89%E3%82%92%E3%83%AA%E3%83%A2%E3%83%87%E3%83%AB%E3%81%99%E3%82%8B-1c0ebeed0ba2
-  embedTweets(page: Page): Promise<void> {
+  embed(page: Page): Promise<void> {
+    const hints = [
+      "https://gist.github.com/",
+      "https://medium.com/",
+      "https://twitter.com/",
+    ];
     return new Promise(async (resolve, reject) => {
-      const logger = this.context.startLog("embedding tweets");
+      const logger = this.context.startLog("embedding");
 
-      const jsHandle = await page.evaluateHandle(() => {
+      const jsHandle = await page.evaluateHandle((hints: Array<string>) => {
         return Array.prototype.filter.call(
           document.querySelectorAll(
             'a.markup--anchor.markup--p-anchor[target="_blank"]',
           ),
           el => {
-            const text = el.innerText;
-            return /^https:\/\/twitter\.com\/.+\/status\/\d+$/.test(
-              String(text),
-            );
+            const url = el.innerText;
+            for (const hint of hints) {
+              if (url.indexOf(hint) === 0) {
+                return true;
+              }
+            }
+            return false;
           },
         );
-      });
+      }, hints);
       const props: Map<string, JSHandle> = await jsHandle.getProperties();
       for (const prop of props.values()) {
         const el = prop.asElement();
         if (el != null) {
           const { x, y, width, height } = await el.boundingBox();
           const right = Math.floor(x + width - 1);
-          const center = Math.floor(y + height / 2);
+          const bottom = Math.floor(y + height - 1);
 
-          logger.log(`expand at (${right}, ${center})`);
+          logger.log(`expand at (${right}, ${bottom})`);
 
-          await page.mouse.click(right, center, { delay: 100 });
+          await page.mouse.click(right, bottom, { delay: 100 });
           await page.keyboard.press("Enter", { delay: 100 });
           await page.keyboard.press("Backspace", { delay: 100 });
         }

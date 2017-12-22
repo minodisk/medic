@@ -43,6 +43,7 @@ export type Page = {
   evaluate<T, U, V>((U, V) => T, u: U, v: V): Promise<T>,
   evaluate<T, U, V, W>((U, V, W) => T, u: U, v: V, w: W): Promise<T>,
   evaluateHandle(() => any): Promise<JSHandle>,
+  evaluateHandle<U>((u: U) => any, U): Promise<JSHandle>,
   close(): Promise<void>,
   on(type: string, (e: any) => void): void,
   removeListener(type: string, (e: any) => void): void,

@@ -65,6 +65,6 @@ $ medic sync --help
   * [x] [Image captions](https://help.medium.com/hc/en-us/articles/115004808787-Image-captions)
   * [x] [Image grids](https://help.medium.com/hc/en-us/articles/115004808587-Image-grids)
 * Embeds
-  * [ ] Medium Posts
-  * [ ] GitHub Gists
+  * [x] Medium Posts
+  * [x] GitHub Gists
   * [x] [Embed Tweets](https://help.medium.com/hc/en-us/articles/216196547-Embed-Tweets)
