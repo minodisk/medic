@@ -9,11 +9,14 @@ const postIds = [];
 
 describe("sync", () => {
   it("should work without error", async () => {
-    await sync([join(__dirname, "fixtures/sync.md")], {
-      parent: {
-        debug: false,
-        cookiesPath: "cookies.json",
+    await sync(
+      [join(__dirname, "fixtures/sync.md")],
+      {
+        parent: {
+          debug: false,
+        },
       },
-    });
+      ["--no-sandbox", "--disable-setuid-sandbox"],
+    );
   });
 });

@@ -10,9 +10,10 @@ import type { SyncOptions } from "./types";
 module.exports = (
   patterns: Array<string>,
   options: SyncOptions,
+  args?: Array<string>,
 ): Promise<void> => {
   return new Promise(async (resolve, reject) => {
-    await syncPosts(createClient(options.parent), patterns);
+    await syncPosts(createClient(options.parent, args), patterns);
     resolve();
   });
 };

@@ -6,36 +6,37 @@ const { stat, removeFile, wait } = require("../src/utils");
 
 jest.setTimeout(60000);
 
-describe.skip("login", () => {
-  let client: Client;
-
-  beforeAll(async () => {
-    try {
-      await stat("cookis.json");
-      await removeFile("cookies.json");
-    } catch (err) {}
-    client = new Client();
+const createClient = () =>
+  new Client(undefined, {
+    args: ["--no-sandbox", "--disable-setuid-sandbox"],
   });
 
-  afterAll(async () => {
-    await client.close();
-  });
-
-  it("should create cookies file", async () => {
-    await client.login();
-  });
-});
+// describe.skip("login", () => {
+//   let client: Client;
+//
+//   beforeAll(async () => {
+//     try {
+//       await stat("cookies.json");
+//       await removeFile("cookies.json");
+//     } catch (err) {}
+//     client = createClient();
+//   });
+//
+//   afterAll(async () => {
+//     await client.close();
+//   });
+//
+//   it("should create cookies file", async () => {
+//     await client.login();
+//   });
+// });
 
 describe("CRUD post", () => {
   let postId;
   let client: Client;
 
   beforeAll(async () => {
-    try {
-      await stat("cookis.json");
-      await removeFile("cookies.json");
-    } catch (err) {}
-    client = new Client();
+    client = createClient();
   });
 
   afterAll(async () => {

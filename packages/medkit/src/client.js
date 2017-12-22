@@ -1,5 +1,6 @@
 // @flow
 
+const { join } = require("path");
 const url = require("url");
 const qs = require("querystring");
 const puppeteer = require("puppeteer");
@@ -17,22 +18,24 @@ import type {
   ElementHandle,
   Logger,
   Context,
-  Options,
+  LaunchOptions,
 } from "./types";
 
 class Client {
   context: Context;
-  options: Options;
+  cookiesPath: string;
+  launchOptions: LaunchOptions;
   browser: Browser;
   cookies: Array<Cookie>;
 
   constructor(
     context?: {
       startLog: (message: string) => Logger,
-      debug?: boolean,
     },
     options?: {
       cookiesPath?: string,
+      headless?: boolean,
+      args?: Array<string>,
     },
   ) {
     this.context = {
@@ -47,13 +50,19 @@ class Client {
           log: (text?: string = "") => console.log(`${title}: ${text}`),
         };
       },
-      debug: false,
       ...context,
     };
-    this.options = {
-      cookiesPath: "cookies.json",
-      ...options,
-    };
+    this.cookiesPath =
+      options != null && options.cookiesPath != null
+        ? options.cookiesPath
+        : join(process.cwd(), "cookies.json");
+    this.launchOptions =
+      options != null
+        ? {
+            headless: options.headless,
+            args: options.args,
+          }
+        : {};
     if (this.context.logger == null) {
       this.context.logger = {
         log: (...message: Array<any>): void => {},
@@ -67,7 +76,7 @@ class Client {
         resolve();
         return;
       }
-      this.browser = await puppeteer.launch({ headless: !this.context.debug });
+      this.browser = await puppeteer.launch(this.launchOptions);
       resolve();
     });
   }
@@ -89,8 +98,8 @@ class Client {
       if (this.cookies == null) {
         for (;;) {
           try {
-            await stat(this.options.cookiesPath);
-            const content = await readFile(this.options.cookiesPath);
+            await stat(this.cookiesPath);
+            const content = await readFile(this.cookiesPath);
             this.cookies = JSON.parse(content);
             if (this.cookies != null) {
               break;
@@ -117,7 +126,10 @@ class Client {
   login(): Promise<void> {
     return new Promise(async (resolve, reject) => {
       const logger = this.context.startLog("login");
-      const browser = await puppeteer.launch({ headless: false });
+      const browser = await puppeteer.launch({
+        ...this.launchOptions,
+        headless: false,
+      });
       const page = patchToPage(await browser.newPage());
       await page.setViewport({ width: 1000, height: 1000 });
 
@@ -137,7 +149,7 @@ class Client {
       );
       this.cookies = await page.cookies();
       await browser.close();
-      await writeFile(this.options.cookiesPath, JSON.stringify(this.cookies));
+      await writeFile(this.cookiesPath, JSON.stringify(this.cookies));
 
       logger.succeed();
       resolve();

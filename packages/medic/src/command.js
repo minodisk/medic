@@ -2,6 +2,7 @@
 // @flow
 
 const program = require("commander");
+const login = require("./login");
 const sync = require("./sync");
 const { version } = require("../package.json");
 
@@ -9,6 +10,17 @@ program
   .version(version)
   .option("-d, --debug", "not to use headless Chromium", false)
   .option("-c, --cookies-path <path>", "cookies file path", "cookies.json");
+
+program
+  .command("login")
+  .description("login to Medium")
+  .action(async options => {
+    try {
+      await login(options);
+    } catch (err) {
+      process.stderr.write(err.toString());
+    }
+  });
 
 // program
 //   .command("fetch [ids...]")
@@ -29,7 +41,7 @@ program
 
 program
   .command("sync <patterns...>")
-  .description("creates or updates posts")
+  .description("creates or updates posts in Medium")
   .on("--help", () => {
     process.stdout.write(`
 

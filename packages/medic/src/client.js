@@ -4,7 +4,7 @@ const Client = require("@minodisk/medkit");
 const ora = require("ora");
 import type { RootOptions } from "./types";
 
-module.exports = (options: RootOptions) => {
+module.exports = (options: RootOptions, args?: Array<string>) => {
   return new Client(
     {
       startLog: (title: string) => {
@@ -27,8 +27,11 @@ module.exports = (options: RootOptions) => {
           },
         };
       },
-      debug: options.debug,
     },
-    { cookiesPath: options.cookiesPath },
+    {
+      cookiesPath: options.cookiesPath,
+      headless: !options.debug,
+      args,
+    },
   );
 };

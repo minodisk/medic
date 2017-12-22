@@ -135,11 +135,11 @@ export type Logger = {
 
 export type Context = {
   startLog(message: string): Logger,
-  debug: boolean,
 };
 
-export type Options = {
-  cookiesPath: string,
+export type LaunchOptions = {
+  headless?: boolean,
+  args?: Array<string>,
 };
 
 export type Key = {
