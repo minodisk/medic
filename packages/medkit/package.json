@@ -1,6 +1,6 @@
 {
   "name": "@minodisk/medkit",
-  "version": "0.7.0",
+  "version": "0.8.0",
   "description": "A SDK for post creation and update by emulating operation on Medium's post edit screen with Headless Chromium via puppetter.",
   "main": "lib/index.js",
   "repository": "git@github.com:minodisk/medic.git",
