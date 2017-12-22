@@ -1,6 +1,6 @@
 {
   "name": "@minodisk/medmd",
-  "version": "0.6.14",
+  "version": "0.7.0",
   "description": "A library for transforming markdown into HTML for Medium.",
   "main": "lib/index.js",
   "repository": "git@github.com:minodisk/medic.git",

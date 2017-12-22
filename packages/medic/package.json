@@ -1,6 +1,6 @@
 {
   "name": "@minodisk/medic",
-  "version": "0.6.14",
+  "version": "0.7.0",
   "description": "A CLI retrives the post metadata and body from the markdown file, transforms the body to HTML with @minodisk/medmd, then create and update posts in Medium with @minodisk/medkit.",
   "main": "lib/index.js",
   "bin": {
@@ -21,8 +21,8 @@
     }
   },
   "dependencies": {
-    "@minodisk/medkit": "0.6.14",
-    "@minodisk/medmd": "0.6.14",
+    "@minodisk/medkit": "0.7.0",
+    "@minodisk/medmd": "0.7.0",
     "commander": "^2.12.2",
     "glob": "^7.1.2",
     "js-yaml": "^3.10.0",
