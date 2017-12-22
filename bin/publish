@@ -41,7 +41,7 @@ program
 
 (async () => {
   try {
-    const version = semver.inc(mainPkg.version, "patch");
+    const version = semver.inc(mainPkg.version, program.release);
     mainPkg.version = version;
     medicPkg.dependencies["@minodisk/medkit"] = version;
     medicPkg.dependencies["@minodisk/medmd"] = version;
@@ -71,7 +71,7 @@ program
     await spawn(
       `yarn workspace @minodisk/medmd publish -- --non-interactive --access=public --no-git-tag-version --new-version ${version}`,
     );
-    await spawn(`git add package.json`);
+    await spawn(`git add .`);
     await spawn(`git commit -m "v${version}"`);
     await spawn(`git tag v${version}`);
     await spawn(`git push`);
