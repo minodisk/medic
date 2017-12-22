@@ -1,4 +1,4 @@
-# Medic [ ![Codeship Status for minodisk/medic](https://app.codeship.com/projects/4f57d400-c917-0135-1586-5e72f9d08083/status?branch=master)](https://app.codeship.com/projects/261653)
+# Medic [ ![Codeship Status for minodisk/medic](https://app.codeship.com/projects/4f57d400-c917-0135-1586-5e72f9d08083/status?branch=master)](https://app.codeship.com/projects/261653)[![code style: prettier](https://img.shields.io/badge/code_style-prettier-ff69b4.svg?style=flat-square)](https://github.com/prettier/prettier)
 
 Tool for manipulating Medium posts written in markdown.
 

@@ -1,4 +1,4 @@
-# @minodisk/medmd
+# @minodisk/medmd [![npm version](https://badge.fury.io/js/%40minodisk%2Fmedmd.svg)](https://badge.fury.io/js/%40minodisk%2Fmedmd)
 
 Converter markdown to HTML for Medium.
 
@@ -8,7 +8,7 @@ Converter markdown to HTML for Medium.
 
 `md2html` transform `md` to HTML.
 
-## Supported formats
+## Supported
 
 * Block Elements
   * [x] Paragraphs and Line Breaks
