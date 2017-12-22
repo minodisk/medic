@@ -1,6 +1,6 @@
 # @minodisk/medkit [![npm version](https://img.shields.io/npm/v/@minodisk/medkit.svg?style=flat-square)](https://www.npmjs.com/package/@minodisk/medkit)
 
-SDK manipulates Medium posts with headless Chromium via [GoogleChrome/puppeteer](https://github.com/GoogleChrome/puppeteer).
+A SDK for post creation and update by emulating operation on [Medium](https://medium.com/)'s post edit screen with Headless Chromium via [puppetter](https://github.com/GoogleChrome/puppeteer).
 
 ## Installation
 

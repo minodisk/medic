@@ -1,6 +1,6 @@
 # @minodisk/medic [![npm version](https://img.shields.io/npm/v/@minodisk/medic.svg?style=flat-square)](https://www.npmjs.com/package/@minodisk/medic)
 
-CLI manipulates Medium posts with markdown files.
+A CLI retrives the post metadata and body from the markdown file, transforms the body to HTML with [@minodisk/medmd](https://github.com/minodisk/medic/tree/master/packages/medic), then create and update posts in [Medium](https://medium.com/) with [@minodisk/medkit](https://github.com/minodisk/medic/tree/master/packages/medkit).
 
 ## Installation
 

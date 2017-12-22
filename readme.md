@@ -1,10 +1,6 @@
 # Medic [ ![Codeship Status for minodisk/medic](https://img.shields.io/codeship/4f57d400-c917-0135-1586-5e72f9d08083/master.svg?style=flat-square)](https://app.codeship.com/projects/261653) [![code style: prettier](https://img.shields.io/badge/code_style-prettier-ff69b4.svg?style=flat-square)](https://github.com/prettier/prettier)
 
-Tool for manipulating Medium posts written in markdown.
-
-## Motivation
-
-I think Medium's has an elegant WYSIWYG editor. But, I would like to write or edit technical posts in another editor and manage version of the posts in Git etc. When trying to do it, it cannot be realized with the [Medium's official API](https://github.com/Medium/medium-api-docs). Because it only supports creating post, it does not support reading, updating and destroying.
+Tool for manipulating [Medium](https://medium.com/) posts written in markdown.
 
 ## Getting Started
 
@@ -63,6 +59,6 @@ $ medic sync getting-started.md
 
 ## Packages
 
-* [@minodisk/medic](packages/medic): CLI manipulates Medium posts with markdown files.
-* [@minodisk/medkit](packages/medkit): SDK manipulates Medium posts.
-* [@minodisk/medmd](packages/medmd): Converter markdown to HTML for Medium.
+* [@minodisk/medic](packages/medic): A CLI retrives the post metadata and body from the markdown file, transforms the body to HTML with [@minodisk/medmd](https://github.com/minodisk/medic/tree/master/packages/medic), then create and update posts in [Medium](https://medium.com/) with [@minodisk/medkit](https://github.com/minodisk/medic/tree/master/packages/medkit).
+* [@minodisk/medkit](packages/medkit): A SDK for post creation and update by emulating operation on [Medium](https://medium.com/)'s post edit screen with Headless Chromium via [puppetter](https://github.com/GoogleChrome/puppeteer).
+* [@minodisk/medmd](packages/medmd): A library for transforming markdown into HTML for [Medium](https://medium.com/).

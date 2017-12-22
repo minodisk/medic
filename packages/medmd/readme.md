@@ -1,6 +1,6 @@
 # @minodisk/medmd [![npm version](https://img.shields.io/npm/v/@minodisk/medmd.svg?style=flat-square)](https://www.npmjs.com/package/@minodisk/medmd)
 
-Converter markdown to HTML for Medium.
+A library for transforming markdown into HTML for [Medium](https://medium.com/).
 
 ## API
 
