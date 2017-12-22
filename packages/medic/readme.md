@@ -1,4 +1,4 @@
-# @minodisk/medic [![npm version](https://badge.fury.io/js/%40minodisk%2Fmedic.svg)](https://badge.fury.io/js/%40minodisk%2Fmedic)
+# @minodisk/medic [![npm version](https://img.shields.io/npm/v/@minodisk/medic.svg?style=flat-square)](https://www.npmjs.com/package/@minodisk/medic)
 
 CLI manipulates Medium posts with markdown files.
 

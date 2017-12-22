@@ -1,4 +1,4 @@
-# @minodisk/medkit [![npm version](https://badge.fury.io/js/%40minodisk%2Fmedkit.svg)](https://badge.fury.io/js/%40minodisk%2Fmedkit)
+# @minodisk/medkit [![npm version](https://img.shields.io/npm/v/@minodisk/medkit.svg?style=flat-square)](https://www.npmjs.com/package/@minodisk/medkit)
 
 SDK manipulates Medium posts with headless Chromium via [GoogleChrome/puppeteer](https://github.com/GoogleChrome/puppeteer).
 

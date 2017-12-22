@@ -1,4 +1,4 @@
-# @minodisk/medmd [![npm version](https://badge.fury.io/js/%40minodisk%2Fmedmd.svg)](https://badge.fury.io/js/%40minodisk%2Fmedmd)
+# @minodisk/medmd [![npm version](https://img.shields.io/npm/v/@minodisk/medmd.svg?style=flat-square)](https://www.npmjs.com/package/@minodisk/medmd)
 
 Converter markdown to HTML for Medium.
 

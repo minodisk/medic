@@ -1,4 +1,4 @@
-# Medic [ ![Codeship Status for minodisk/medic](https://app.codeship.com/projects/4f57d400-c917-0135-1586-5e72f9d08083/status?branch=master)](https://app.codeship.com/projects/261653)[![code style: prettier](https://img.shields.io/badge/code_style-prettier-ff69b4.svg?style=flat-square)](https://github.com/prettier/prettier)
+# Medic [ ![Codeship Status for minodisk/medic](https://img.shields.io/codeship/4f57d400-c917-0135-1586-5e72f9d08083/master.svg?style=flat-square)](https://app.codeship.com/projects/261653) [![code style: prettier](https://img.shields.io/badge/code_style-prettier-ff69b4.svg?style=flat-square)](https://github.com/prettier/prettier)
 
 Tool for manipulating Medium posts written in markdown.
 
@@ -9,6 +9,12 @@ I think Medium's has an elegant WYSIWYG editor. But, I would like to write or ed
 ## Getting Started
 
 ### Step 1. Install CLI
+
+```sh
+$ yarn global add @minodisk/medic
+```
+
+or
 
 ```sh
 $ npm install -g @minodisk/medic
