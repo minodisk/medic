@@ -1,0 +1,11 @@
+- type: parallel
+  steps:
+    - name: Test medic
+      service: node
+      command: sh -c 'echo $COOKIES_JSON > packages/medic/cookies.json && yarn workspace @minodisk/medic test'
+    - name: Test medkit
+      service: node
+      command: sh -c 'echo $COOKIES_JSON > packages/medkit/cookies.json && yarn workspace @minodisk/medkit test'
+    - name: Test medmd
+      service: node
+      command: sh -c 'yarn workspace @minodisk/medmd test'

@@ -1,15 +1,10 @@
-# Medic
+# Medic [ ![Codeship Status for minodisk/medic](https://app.codeship.com/projects/4f57d400-c917-0135-1586-5e72f9d08083/status?branch=master)](https://app.codeship.com/projects/261653)
 
 Tool for manipulating Medium posts written in markdown.
 
 ## Motivation
 
-I think Medium's has an elegant WYSIWYG editor. But, I would like to write or edit
-technical posts in another editor and manage version of the posts in Git etc.
-When trying to do it, it cannot be realized with the
-[Medium's official API](https://github.com/Medium/medium-api-docs). Because it
-only supports creating post, it does not support reading, updating and
-destroying.
+I think Medium's has an elegant WYSIWYG editor. But, I would like to write or edit technical posts in another editor and manage version of the posts in Git etc. When trying to do it, it cannot be realized with the [Medium's official API](https://github.com/Medium/medium-api-docs). Because it only supports creating post, it does not support reading, updating and destroying.
 
 ## Getting Started
 
