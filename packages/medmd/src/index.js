@@ -385,11 +385,18 @@ const transformHAST = options => {
   };
 };
 
-const md2html = (md: string | VFile): Promise<string> =>
+const md2html = (
+  md: string | VFile,
+  options?: { breaks?: boolean },
+): Promise<string> =>
   new Promise((resolve, reject) => {
+    const opts = {
+      breaks: false,
+      ...options,
+    };
     unified()
       .use(md2mdast)
-      .use(breaks)
+      .use(opts.break ? breaks : null)
       .use(transformMDAST)
       .use(mdast2html)
       .process(md, (err, file) => {

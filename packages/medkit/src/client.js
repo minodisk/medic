@@ -280,6 +280,8 @@ class Client {
     });
   }
 
+  // Gist: https://gist.github.com/minodisk/cbb2f305884b82d5b22aaa9fc1e3239d
+  // Medium: https://medium.com/@minodisk/dactyl-%E3%82%AD%E3%83%BC%E3%83%9C%E3%83%BC%E3%83%89%E3%82%92%E3%83%AA%E3%83%A2%E3%83%87%E3%83%AB%E3%81%99%E3%82%8B-1c0ebeed0ba2
   embedTweets(page: Page): Promise<void> {
     return new Promise(async (resolve, reject) => {
       const logger = this.context.startLog("embedding tweets");
