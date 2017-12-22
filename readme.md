@@ -1,4 +1,4 @@
-# Medic [ ![Codeship Status for minodisk/medic](https://img.shields.io/codeship/4f57d400-c917-0135-1586-5e72f9d08083/master.svg?style=flat-square)](https://app.codeship.com/projects/261653) [![code style: prettier](https://img.shields.io/badge/code_style-prettier-ff69b4.svg?style=flat-square)](https://github.com/prettier/prettier)
+# Medic [![typed with: Flow](https://img.shields.io/badge/typed%20with-Flow-E7BC35.svg?style=flat-square)](https://flow.org/) [![code style: prettier](https://img.shields.io/badge/code_style-prettier-ff69b4.svg?style=flat-square)](https://github.com/prettier/prettier) [![MIT License](https://img.shields.io/github/license/minodisk/medic.svg?style=flat-square)](./LICENSE) [![Codeship Status for minodisk/medic](https://img.shields.io/codeship/4f57d400-c917-0135-1586-5e72f9d08083/master.svg?style=flat-square)](https://app.codeship.com/projects/261653)
 
 Tool for manipulating [Medium](https://medium.com/) posts written in markdown.
 
