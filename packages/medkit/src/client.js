@@ -270,7 +270,9 @@ class Client {
     return new Promise(async (resolve, reject) => {
       const logger = this.context.startLog("pasting");
       await page.setDataToClipboard("text/html", html);
-      await page.focus("div.section-inner");
+      const selector = "div.section-inner";
+      await page.waitForSelector(selector);
+      await page.focus(selector);
       await page.shortcut("a");
       await page.shortcut("v");
       logger.succeed();
