@@ -11,6 +11,8 @@ import type {
   Key,
 } from "./types";
 
+const shortcutKey = process.platform === "darwin" ? "Command" : "Control";
+
 const mapKeys = (keys: Array<Key>, result: Array<string>) => {
   const map = {};
   keys.forEach((key, i) => {
@@ -31,9 +33,9 @@ const patches = {
 
   shortcut(key: string): Promise<void> {
     return new Promise(async (resolve, reject) => {
-      await this.keyboard.down("Control");
+      await this.keyboard.down(shortcutKey);
       await this.keyboard.press(key, { delay: 100 });
-      await this.keyboard.up("Control");
+      await this.keyboard.up(shortcutKey);
       resolve();
     });
   },
