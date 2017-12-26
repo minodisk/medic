@@ -22,6 +22,7 @@ import type {
 } from "./types";
 
 class Client {
+  isDarwin: boolean;
   context: Context;
   cookiesPath: string;
   launchOptions: LaunchOptions;
@@ -38,6 +39,7 @@ class Client {
       args?: Array<string>,
     },
   ) {
+    this.isDarwin = process.platform === "darwin";
     this.context = {
       startLog: (title: string) => {
         console.log(`start ${title}`);
@@ -70,57 +72,58 @@ class Client {
     }
   }
 
-  open(): Promise<void> {
+  open(useShortcut: boolean): Promise<void> {
     return new Promise(async (resolve, reject) => {
       if (this.browser != null) {
         resolve();
         return;
       }
-      this.browser = await puppeteer.launch(this.launchOptions);
-      resolve();
-    });
-  }
-
-  close(): Promise<void> {
-    return new Promise(async (resolve, reject) => {
-      if (this.browser == null) {
-        resolve();
-        return;
-      }
-      await this.browser.close();
-      delete this.browser;
-      resolve();
-    });
-  }
-
-  newPage(): Promise<Page> {
-    return new Promise(async (resolve, reject) => {
-      if (this.cookies == null) {
-        for (;;) {
-          try {
-            await stat(this.cookiesPath);
-            const content = await readFile(this.cookiesPath);
-            this.cookies = JSON.parse(content);
-            if (this.cookies != null) {
-              break;
+      this.browser = await puppeteer.launch(
+        useShortcut && this.isDarwin
+          ? {
+              ...this.launchOptions,
+              headless: false,
             }
-          } catch (err) {
-            await this.login();
+          : this.launchOptions,
+      );
+      resolve();
+    });
+  }
+
+  async close(): Promise<void> {
+    if (this.browser == null) {
+      return;
+    }
+    await this.browser.close();
+    delete this.browser;
+  }
+
+  async newPage(useShortcut: boolean = false): Promise<Page> {
+    if (this.cookies == null) {
+      for (;;) {
+        try {
+          await stat(this.cookiesPath);
+          const content = await readFile(this.cookiesPath);
+          this.cookies = JSON.parse(content);
+          if (this.cookies != null) {
+            break;
           }
+        } catch (err) {
+          await this.login();
         }
       }
+    }
 
-      await this.open();
-      const page = patchToPage(await this.browser.newPage());
-      await page.setViewport({
-        width: 1000,
-        height: 1000,
-      });
-      const ua = await page.getUserAgent();
-      await page.setUserAgent(ua.replace("Headless", ""));
-      await page.setCookie(...this.cookies);
-      resolve(page);
+    await this.open(useShortcut);
+    const page = patchToPage(await this.browser.newPage());
+    await page.setViewport({
+      width: 1000,
+      height: 1000,
     });
+    const ua = await page.getUserAgent();
+    await page.setUserAgent(ua.replace("Headless", ""));
+    await page.setCookie(...this.cookies);
+    return Promise.resolve(page);
   }
 
   login(): Promise<void> {
@@ -164,8 +167,11 @@ class Client {
     return new Promise(async (resolve, reject) => {
       for (;;) {
         try {
+          const resp = page.waitForResponse("GET", url, {
+            timeout: 0,
+          });
           await page.goto(url, options);
-          const { status } = await page.waitForResponse("GET", url);
+          const { status } = await resp;
           if (status >= 300) {
             await this.login();
             await page.setCookie(...this.cookies);
@@ -183,7 +189,7 @@ class Client {
 
   createPost(html: string, options?: PostOptions): Promise<string> {
     return new Promise(async (resolve, reject) => {
-      const page = await this.newPage();
+      const page = await this.newPage(true);
       await this.gotoAndPaste(
         page,
         "https://medium.com/new-story",
@@ -209,7 +215,7 @@ class Client {
     options?: PostOptions,
   ): Promise<void> {
     return new Promise(async (resolve, reject) => {
-      const page = await this.newPage();
+      const page = await this.newPage(true);
       await this.gotoAndPaste(
         page,
         `https://medium.com/p/${postId}/edit`,
@@ -269,12 +275,25 @@ class Client {
   pasteHTML(page: Page, html: string): Promise<void> {
     return new Promise(async (resolve, reject) => {
       const logger = this.context.startLog("pasting");
-      await page.setDataToClipboard("text/html", html);
       const selector = "div.section-inner";
       await page.waitForSelector(selector);
+
+      // await page.evaluate(
+      //   (selector, html) => {
+      //     document.querySelector(selector).innerHTML = html;
+      //   },
+      //   selector,
+      //   html,
+      // );
+
       await page.focus(selector);
+      // await page.setDataToClipboard("text/html", html);
+      // await paste();
+
       await page.shortcut("a");
+      await page.setDataToClipboard("text/html", html);
       await page.shortcut("v");
+
       logger.succeed();
       resolve();
     });

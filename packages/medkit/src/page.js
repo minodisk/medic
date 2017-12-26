@@ -1,6 +1,6 @@
 // @flow
 
-const { statusText } = require("./utils");
+const { wait } = require("./utils");
 const pathToRegexp = require("path-to-regexp");
 import type {
   Page,
@@ -10,8 +10,6 @@ import type {
   Context,
   Key,
 } from "./types";
-
-const shortcutKey = process.platform === "darwin" ? "Command" : "Control";
 
 const mapKeys = (keys: Array<Key>, result: Array<string>) => {
   const map = {};
@@ -25,37 +23,43 @@ const mapKeys = (keys: Array<Key>, result: Array<string>) => {
 };
 
 const patches = {
-  getUserAgent(): Promise<string> {
-    return new Promise(async (resolve, reject) => {
-      resolve(await this.evaluate(() => navigator.userAgent));
-    });
+  async getUserAgent(): Promise<string> {
+    const ua = await this.evaluate(() => navigator.userAgent);
+    return Promise.resolve(ua);
   },
 
-  shortcut(key: string): Promise<void> {
-    return new Promise(async (resolve, reject) => {
-      await this.keyboard.down(shortcutKey);
-      await this.keyboard.press(key, { delay: 100 });
-      await this.keyboard.up(shortcutKey);
-      resolve();
-    });
+  async shortcut(key: string): Promise<void> {
+    switch (process.platform) {
+      case "darwin":
+        await this.bringToFront();
+        await this.keyboard.press("Meta", { text: key });
+        break;
+      default:
+        await this.keyboard.down("Control");
+        await this.keyboard.press(key);
+        await this.keyboard.up("Control");
+        break;
+    }
   },
 
-  setDataToClipboard(type: string, data: string) {
-    return new Promise(async (resolve, reject) => {
-      await this.evaluate(
-        (t, d) => {
-          const onCopy = (e: ClipboardEvent): void => {
-            e.preventDefault();
-            e.clipboardData.setData(t, d);
-          };
-          (document: any).addEventListener("copy", onCopy);
-        },
-        type,
-        data,
-      );
-      await this.shortcut("c");
-      resolve();
-    });
+  async setDataToClipboard(type: string, data: string) {
+    // this.on("console", msg => console.log(msg._text));
+    const handle = await this.evaluateHandle(
+      (t, d) => {
+        const onCopyToClipboard = (e: ClipboardEvent): void => {
+          // console.log("onCopy");
+          e.preventDefault();
+          e.clipboardData.setData(t, d);
+          // console.log("onCopy:", e.clipboardData.getData(t));
+          (document: any).removeEventListener("copy", onCopyToClipboard);
+        };
+        (document: any).addEventListener("copy", onCopyToClipboard);
+        // console.log("listening copy event...");
+      },
+      type,
+      data,
+    );
+    await this.shortcut("c");
   },
 
   waitForResponse(
@@ -84,17 +88,18 @@ const patches = {
 
       const onResponse = async res => {
         const req = res.request();
-        const result = re.exec(req.url);
-        if (req.method !== method || result == null) {
+        const result = re.exec(req.url());
+        if (req.method() !== method || result == null) {
           return;
         }
         clearTimeout(timeoutId);
         this.removeListener("response", (onResponse: any));
-        if (res.status >= 400) {
-          reject(`bad status: ${res.status} is responsed`);
+        const status = res.status();
+        if (status >= 400) {
+          reject(`bad status: ${status} is responsed`);
           return;
         }
-        resolve({ status: res.status, result: mapKeys(keys, result) });
+        resolve({ status: status, result: mapKeys(keys, result) });
       };
       this.on("response", (onResponse: any));
     });
