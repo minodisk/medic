@@ -59,13 +59,21 @@ class Client {
       options != null && options.cookiesPath != null
         ? options.cookiesPath
         : join(process.cwd(), "cookies.json");
-    this.launchOptions =
-      options != null
-        ? {
-            headless: options.headless,
-            args: options.args,
-          }
-        : {};
+    this.launchOptions = {
+      headless: true,
+      args:
+        process.env.DOCKER === "true"
+          ? ["--no-sandbox", "--disable-setuid-sandbox"]
+          : [],
+    };
+    if (options != null) {
+      if (options.headless != null) {
+        this.launchOptions.headless = options.headless;
+      }
+      if (options.args != null) {
+        this.launchOptions.args = [...this.launchOptions.args, ...options.args];
+      }
+    }
     if (this.context.logger == null) {
       this.context.logger = {
         log: (...message: Array<any>): void => {},

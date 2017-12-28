@@ -139,8 +139,8 @@ export type Context = {
 };
 
 export type LaunchOptions = {
-  headless?: boolean,
-  args?: Array<string>,
+  headless: boolean,
+  args: Array<string>,
 };
 
 export type Key = {

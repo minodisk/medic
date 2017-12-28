@@ -41,15 +41,9 @@ RUN apt-get update && \
       xdg-utils \
       wget
 
-WORKDIR /medic
+RUN yarn global add @minodisk/medic
 
-COPY package.json yarn.lock ./
-COPY packages/medic/package.json packages/medic/package.json
-COPY packages/medkit/package.json packages/medkit/package.json
-COPY packages/medmd/package.json packages/medmd/package.json
-RUN yarn
-
-COPY . .
-RUN yarn build
+WORKDIR /articles
 
 ENV DOCKER=true
+CMD medic --help

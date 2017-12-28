@@ -6,11 +6,6 @@ const { stat, removeFile, wait } = require("../src/utils");
 
 jest.setTimeout(120000);
 
-const createClient = () =>
-  new Client(undefined, {
-    args: ["--no-sandbox", "--disable-setuid-sandbox"],
-  });
-
 // describe.skip("login", () => {
 //   let client: Client;
 //
@@ -19,7 +14,7 @@ const createClient = () =>
 //       await stat("cookies.json");
 //       await removeFile("cookies.json");
 //     } catch (err) {}
-//     client = createClient();
+//     client = new Client();
 //   });
 //
 //   afterAll(async () => {
@@ -36,7 +31,7 @@ describe("CRUD post", () => {
   let postId;
 
   beforeAll(async () => {
-    client = createClient();
+    client = new Client();
   });
 
   afterAll(async () => {
