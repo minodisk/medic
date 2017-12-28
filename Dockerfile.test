@@ -42,6 +42,12 @@ RUN apt-get update && \
       wget
 
 WORKDIR /medic
-COPY . ./
+
+COPY package.json yarn.lock ./
+COPY packages/medic/package.json packages/medic/package.json
+COPY packages/medkit/package.json packages/medkit/package.json
+COPY packages/medmd/package.json packages/medmd/package.json
 RUN yarn
+
+COPY . .
 RUN yarn build
