@@ -24,8 +24,7 @@ const mapKeys = (keys: Array<Key>, result: Array<string>) => {
 
 const patches = {
   async getUserAgent(): Promise<string> {
-    const ua = await this.evaluate(() => navigator.userAgent);
-    return Promise.resolve(ua);
+    return await this.evaluate(() => navigator.userAgent);
   },
 
   async shortcut(key: string): Promise<void> {
@@ -43,18 +42,14 @@ const patches = {
   },
 
   async setDataToClipboard(type: string, data: string) {
-    // this.on("console", msg => console.log(msg._text));
     const handle = await this.evaluateHandle(
       (t, d) => {
         const onCopyToClipboard = (e: ClipboardEvent): void => {
-          // console.log("onCopy");
           e.preventDefault();
           e.clipboardData.setData(t, d);
-          // console.log("onCopy:", e.clipboardData.getData(t));
           (document: any).removeEventListener("copy", onCopyToClipboard);
         };
         (document: any).addEventListener("copy", onCopyToClipboard);
-        // console.log("listening copy event...");
       },
       type,
       data,
@@ -68,7 +63,6 @@ const patches = {
     options?: {
       timeout?: number,
     },
-    logger?: Logger,
   ): Promise<{ status: number, result: Object }> {
     return new Promise((resolve, reject) => {
       const keys = [];
@@ -78,30 +72,38 @@ const patches = {
         ...options,
       };
 
+      if (method === "GET") {
+        const result = re.exec(this.url());
+        if (result != null) {
+          resolve({ status: 200, result: mapKeys(keys, result) });
+          return;
+        }
+      }
+
       let timeoutId;
       if (opts.timeout > 0) {
         timeoutId = setTimeout(() => {
-          this.removeListener("response", (onResponse: any));
+          this.removeListener("response", onResponse);
           reject("timeout");
         }, opts.timeout);
       }
 
-      const onResponse = async res => {
+      const onResponse = res => {
         const req = res.request();
         const result = re.exec(req.url());
         if (req.method() !== method || result == null) {
           return;
         }
         clearTimeout(timeoutId);
-        this.removeListener("response", (onResponse: any));
+        this.removeListener("response", onResponse);
         const status = res.status();
         if (status >= 400) {
-          reject(`bad status: ${status} is responsed`);
+          reject(`bad status: ${status}`);
           return;
         }
         resolve({ status: status, result: mapKeys(keys, result) });
       };
-      this.on("response", (onResponse: any));
+      this.on("response", onResponse);
     });
   },
 
