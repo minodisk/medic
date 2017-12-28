@@ -666,6 +666,10 @@ default-require-extensions@^1.0.0:
   dependencies:
     strip-bom "^2.0.0"
 
+deferp@^0.0.1:
+  version "0.0.1"
+  resolved "https://registry.yarnpkg.com/deferp/-/deferp-0.0.1.tgz#e09d2a41980abba78f0a4c6e931af625272cb733"
+
 delayed-stream@~1.0.0:
   version "1.0.0"
   resolved "https://registry.yarnpkg.com/delayed-stream/-/delayed-stream-1.0.0.tgz#df3ae199acadfb7d440aaae0b29e2272b24ec619"

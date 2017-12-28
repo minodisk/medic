@@ -18,6 +18,7 @@
     }
   },
   "dependencies": {
+    "deferp": "^0.0.1",
     "path-to-regexp": "^2.1.0",
     "puppeteer": "minodisk/puppeteer#add-native-virtual-key-code"
   },
