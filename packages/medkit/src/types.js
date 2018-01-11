@@ -55,9 +55,11 @@ export type Page = {
   ): Promise<void>,
   url(): Promise<string>,
   // Patchs
+  execCommand(command: string): Promise<boolean>,
   getUserAgent(): Promise<string>,
-  shortcut(key: string): Promise<void>,
+  selectText(selector: string): Promise<void>,
   setDataToClipboard(type: string, data: string): Promise<void>,
+  shortcut(key: string): Promise<void>,
   waitForResponse(
     method: "OPTIONS" | "GET" | "POST" | "PUT" | "PATCH" | "DELETE",
     url: string,

@@ -23,7 +23,6 @@ import type {
 } from "./types";
 
 class Client {
-  isDarwin: boolean;
   context: Context;
   cookiesPath: string;
   launchOptions: LaunchOptions;
@@ -40,7 +39,6 @@ class Client {
       args?: Array<string>,
     },
   ) {
-    this.isDarwin = process.platform === "darwin";
     this.context = {
       startLog: (title: string) => {
         console.log(`start ${title}`);
@@ -59,12 +57,16 @@ class Client {
       options != null && options.cookiesPath != null
         ? options.cookiesPath
         : join(process.cwd(), "cookies.json");
+    const pathToExtension = join(__dirname, "../extensions/paste/");
     this.launchOptions = {
       headless: true,
       args:
         process.env.DOCKER === "true"
           ? ["--no-sandbox", "--disable-setuid-sandbox"]
-          : [],
+          : [
+              `--disable-extensions-except=${pathToExtension}`,
+              `--load-extension=${pathToExtension}`,
+            ],
     };
     if (options != null) {
       if (options.headless != null) {
@@ -85,13 +87,9 @@ class Client {
     if (this.browser != null) {
       return;
     }
+    console.log(this.launchOptions);
     this.browser = await puppeteer.launch(
-      useShortcut && this.isDarwin
-        ? {
-            ...this.launchOptions,
-            headless: false,
-          }
-        : this.launchOptions,
+      this.launchOptions,
     );
   }
 
@@ -254,11 +252,14 @@ class Client {
     const selector = "div.section-inner";
     await page.waitForSelector(selector);
 
+    logger.log("select text");
+    await page.selectText(selector);
+    logger.log("set data to clipboard");
     await page.setDataToClipboard("text/html", html);
-
+    logger.log("focus");
     await page.focus(selector);
-    await page.shortcut("a");
-    await page.shortcut("v");
+    logger.log("paste");
+    await page.execCommand("paste");
 
     logger.succeed();
   }

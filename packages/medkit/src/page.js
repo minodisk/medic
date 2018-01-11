@@ -1,5 +1,6 @@
 // @flow
 
+const defer = require("deferp");
 const { wait } = require("./utils");
 const pathToRegexp = require("path-to-regexp");
 import type {
@@ -27,34 +28,59 @@ const patches = {
     return await this.evaluate(() => navigator.userAgent);
   },
 
-  async shortcut(key: string): Promise<void> {
-    switch (process.platform) {
-      case "darwin":
-        await this.bringToFront();
-        await this.keyboard.press("Meta", { text: key });
-        break;
-      default:
-        await this.keyboard.down("Control");
-        await this.keyboard.press(key);
-        await this.keyboard.up("Control");
-        break;
-    }
+  async selectText(selector: string) {
+    const el = await this.$(selector);
+    const { x, y, width, height } = await el.boundingBox();
+    await this.mouse.down(x, y);
+    await this.mouse.move(x + width, y + height);
+    await this.mouse.up();
   },
 
   async setDataToClipboard(type: string, data: string) {
-    const handle = await this.evaluateHandle(
-      (t, d) => {
-        const onCopyToClipboard = (e: ClipboardEvent): void => {
-          e.preventDefault();
-          e.clipboardData.setData(t, d);
-          (document: any).removeEventListener("copy", onCopyToClipboard);
-        };
-        (document: any).addEventListener("copy", onCopyToClipboard);
-      },
-      type,
-      data,
+    const deferred = defer(
+      this.evaluate(
+        (t, d) => {
+          return new Promise(resolve => {
+            const onCopyToClipboard = (e: ClipboardEvent): void => {
+              e.preventDefault();
+              e.clipboardData.setData(t, d);
+              (document: any).removeEventListener("copy", onCopyToClipboard);
+              resolve();
+            };
+            (document: any).addEventListener("copy", onCopyToClipboard);
+          });
+        },
+        type,
+        data,
+      ),
     );
-    await this.shortcut("c");
+    await this.execCommand("copy");
+    await deferred();
+  },
+
+  async execCommand(command: string) {
+    await this.evaluate(
+      (cmd: string) =>
+        new Promise((resolve, reject) => {
+          try {
+            window.chrome.runtime.sendMessage(
+              window.pasteExtensionId,
+              cmd,
+              null,
+              result => {
+                if (result) {
+                  resolve();
+                } else {
+                  reject(new Error(`${cmd} isn't executable`));
+                }
+              },
+            );
+          } catch (err) {
+            reject(err);
+          }
+        }),
+      command,
+    );
   },
 
   waitForResponse(
