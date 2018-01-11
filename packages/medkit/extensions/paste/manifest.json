@@ -2,7 +2,12 @@
   "manifest_version": 2,
   "name": "paste",
   "version": "0.0.0",
-  "permissions": ["tabs", "https://medium.com/*", "clipboardRead",  "clipboardWrite"],
+  "permissions": [
+    "tabs",
+    "https://medium.com/*",
+    "clipboardRead",
+    "clipboardWrite"
+  ],
   "externally_connectable": {
     "matches": ["https://medium.com/*"]
   },
