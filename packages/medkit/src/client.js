@@ -88,9 +88,7 @@ class Client {
       return;
     }
     console.log(this.launchOptions);
-    this.browser = await puppeteer.launch(
-      this.launchOptions,
-    );
+    this.browser = await puppeteer.launch(this.launchOptions);
   }
 
   async close(): Promise<void> {
