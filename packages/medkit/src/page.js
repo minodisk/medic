@@ -59,6 +59,7 @@ const patches = {
   },
 
   async execCommand(command: string) {
+    console.log("execCommand");
     await this.evaluate(
       (cmd: string) =>
         new Promise((resolve, reject) => {
@@ -81,6 +82,7 @@ const patches = {
         }),
       command,
     );
+    console.log("execCommand done");
   },
 
   waitForResponse(
