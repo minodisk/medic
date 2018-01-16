@@ -1,8 +1,6 @@
 // @flow
 
 const { join } = require("path");
-const url = require("url");
-const qs = require("querystring");
 const puppeteer = require("puppeteer");
 const defer = require("deferp");
 const { wait, stat, readFile, writeFile } = require("./utils");
@@ -16,7 +14,6 @@ import type {
   Cookie,
   PostOptions,
   JSHandle,
-  ElementHandle,
   Logger,
   Context,
   LaunchOptions,
@@ -75,11 +72,6 @@ class Client {
       if (options.args != null) {
         this.launchOptions.args = [...this.launchOptions.args, ...options.args];
       }
-    }
-    if (this.context.logger == null) {
-      this.context.logger = {
-        log: (...message: Array<any>): void => {},
-      };
     }
   }
 
@@ -250,14 +242,14 @@ class Client {
     const selector = "div.section-inner";
     await page.waitForSelector(selector);
 
-    logger.log("select text");
-    await page.selectText(selector);
-    logger.log("set data to clipboard");
-    await page.setDataToClipboard("text/html", html);
     logger.log("focus");
     await page.focus(selector);
+    logger.log("select all");
+    await page.execCommand("selectAll");
+    logger.log("set data to clipboard");
+    await page.setDataToClipboard("text/html", html);
     logger.log("paste");
-    await page.execCommand("paste");
+    await page.execCommandViaExtension("paste");
 
     logger.succeed();
   }
@@ -307,7 +299,6 @@ class Client {
 
   async savePost(page: Page): Promise<void> {
     const logger = this.context.startLog("saving post");
-
     for (let i = 0; ; i++) {
       try {
         await page.waitForResponse(

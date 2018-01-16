@@ -55,11 +55,10 @@ export type Page = {
   ): Promise<void>,
   url(): Promise<string>,
   // Patchs
-  execCommand(command: string): Promise<boolean>,
+  execCommand(command: string, showUI?: boolean, argument?: any): Promise<void>,
+  execCommandViaExtension(command: string): Promise<void>,
   getUserAgent(): Promise<string>,
-  selectText(selector: string): Promise<void>,
   setDataToClipboard(type: string, data: string): Promise<void>,
-  shortcut(key: string): Promise<void>,
   waitForResponse(
     method: "OPTIONS" | "GET" | "POST" | "PUT" | "PATCH" | "DELETE",
     url: string,
@@ -70,7 +69,6 @@ export type Page = {
     url: string,
     options?: { timeout?: number },
   ): Promise<{ result: Object }>,
-  waitForLogin(target: string): Promise<Array<Cookie> | void>,
 };
 
 export type JSHandle = {

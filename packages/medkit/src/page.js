@@ -1,16 +1,8 @@
 // @flow
 
 const defer = require("deferp");
-const { wait } = require("./utils");
 const pathToRegexp = require("path-to-regexp");
-import type {
-  Page,
-  ClipboardEvent,
-  Cookie,
-  Logger,
-  Context,
-  Key,
-} from "./types";
+import type { Page, ClipboardEvent, Key } from "./types";
 
 const mapKeys = (keys: Array<Key>, result: Array<string>) => {
   const map = {};
@@ -24,42 +16,20 @@ const mapKeys = (keys: Array<Key>, result: Array<string>) => {
 };
 
 const patches = {
-  async getUserAgent(): Promise<string> {
-    return await this.evaluate(() => navigator.userAgent);
-  },
-
-  async selectText(selector: string) {
-    const el = await this.$(selector);
-    const { x, y, width, height } = await el.boundingBox();
-    await this.mouse.down(x, y);
-    await this.mouse.move(x + width, y + height);
-    await this.mouse.up();
-  },
-
-  async setDataToClipboard(type: string, data: string) {
-    const deferred = defer(
-      this.evaluate(
-        (t, d) => {
-          return new Promise(resolve => {
-            const onCopyToClipboard = (e: ClipboardEvent): void => {
-              e.preventDefault();
-              e.clipboardData.setData(t, d);
-              (document: any).removeEventListener("copy", onCopyToClipboard);
-              resolve();
-            };
-            (document: any).addEventListener("copy", onCopyToClipboard);
-          });
-        },
-        type,
-        data,
-      ),
+  async execCommand(command: string, showUI: boolean, argument: any) {
+    const result = await this.evaluate(
+      (cmd: string, show: boolean, arg: any) =>
+        document.execCommand(cmd, show, arg),
+      command,
+      showUI,
+      argument,
     );
-    await this.execCommand("copy");
-    await deferred();
+    if (!result) {
+      new Error(`command '${command}' isn't executable`);
+    }
   },
 
-  async execCommand(command: string) {
-    console.log("execCommand");
+  async execCommandViaExtension(command: string) {
     await this.evaluate(
       (cmd: string) =>
         new Promise((resolve, reject) => {
@@ -72,7 +42,7 @@ const patches = {
                 if (result) {
                   resolve();
                 } else {
-                  reject(new Error(`${cmd} isn't executable`));
+                  reject(new Error(`command '${cmd}' isn't executable`));
                 }
               },
             );
@@ -82,7 +52,35 @@ const patches = {
         }),
       command,
     );
-    console.log("execCommand done");
+  },
+
+  async getUserAgent(): Promise<string> {
+    return await this.evaluate(() => navigator.userAgent);
+  },
+
+  async setDataToClipboard(type: string, data: string) {
+    const deferred = defer(
+      this.evaluate(
+        (t, d) =>
+          new Promise((resolve, reject) => {
+            try {
+              const onCopyToClipboard = (e: ClipboardEvent): void => {
+                e.preventDefault();
+                e.clipboardData.setData(t, d);
+                (document: any).removeEventListener("copy", onCopyToClipboard);
+                resolve();
+              };
+              (document: any).addEventListener("copy", onCopyToClipboard);
+            } catch (err) {
+              reject(err);
+            }
+          }),
+        type,
+        data,
+      ),
+    );
+    await this.execCommandViaExtension("copy");
+    await deferred();
   },
 
   waitForResponse(
