@@ -19,6 +19,7 @@
   },
   "dependencies": {
     "deferp": "^0.0.1",
+    "listr": "^0.13.0",
     "path-to-regexp": "^2.1.0",
     "puppeteer": "^1.0.0"
   },

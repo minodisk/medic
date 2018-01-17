@@ -3,6 +3,7 @@
 const { join } = require("path");
 const puppeteer = require("puppeteer");
 const defer = require("deferp");
+const Listr = require("listr");
 const { wait, stat, readFile, writeFile } = require("./utils");
 const patchToPage = require("./page");
 
@@ -207,19 +208,52 @@ class Client {
     html: string,
     options?: PostOptions,
   ): Promise<void> {
-    await this.gotoAndLogin(page, url, { timeout: 0 });
-    await this.waitForLoading(page);
-    await this.waitForInitializing(page);
-    await this.pasteHTML(page, html);
-    await this.embed(page);
-    await this.savePost(page);
-    if (options != null && Object.keys(options).length > 0) {
-      await this.openPostOptions(page);
-      await this.removeTags(page);
-      if (options.tags != null && options.tags.length > 0) {
-        await this.addTags(page, options.tags);
-      }
-    }
+    new Listr([
+      {
+        title: "login",
+        task: () => this.gotoAndLogin(page, url, { timeout: 0 }),
+      },
+      {
+        title: "loading",
+        task: () => this.waitForLoading(page),
+      },
+      {
+        title: "initializing",
+        task: () => this.waitForInitializing(page),
+      },
+      {
+        title: "pasting",
+        task: () => this.pasteHTML(page, html),
+      },
+      {
+        title: "embedding",
+        task: () => this.embed(page),
+      },
+      {
+        title: "saving",
+        task: () => this.savePost(page),
+      },
+      {
+        title: "update tags",
+        skip: () => options == null || Object.keys(options).length === 0,
+        task: () =>
+          new Listr([
+            {
+              title: "open post options",
+              task: () => this.openPostOptions(page),
+            },
+            {
+              title: "remove current tags",
+              task: () => this.removeTags(page),
+            },
+            {
+              title: "add new tags",
+              skip: () => options.tags == null || options.tags.length === 0,
+              task: () => this.addTags(page, options.tags),
+            },
+          ]),
+      },
+    ]);
   }
 
   async waitForLoading(page: Page): Promise<void> {
