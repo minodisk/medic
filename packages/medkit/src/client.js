@@ -20,6 +20,15 @@ import type {
   LaunchOptions,
 } from "./types";
 
+type ListrItem = {
+  title: string,
+  task: (ctx: any, task: Task) => Promise<void>,
+};
+
+type Task = {
+  output: string,
+};
+
 class Client {
   context: Context;
   cookiesPath: string;
@@ -202,13 +211,13 @@ class Client {
     await page.close();
   }
 
-  async gotoAndPaste(
+  gotoAndPaste(
     page: Page,
     url: string,
     html: string,
     options?: PostOptions,
   ): Promise<void> {
-    new Listr([
+    return new Listr([
       {
         title: "login",
         task: () => this.gotoAndLogin(page, url, { timeout: 0 }),
@@ -225,16 +234,10 @@ class Client {
         title: "pasting",
         task: () => this.pasteHTML(page, html),
       },
+      this.embed(page),
+      this.savePost(page),
       {
-        title: "embedding",
-        task: () => this.embed(page),
-      },
-      {
-        title: "saving",
-        task: () => this.savePost(page),
-      },
-      {
-        title: "update tags",
+        title: "update post options",
         skip: () => options == null || Object.keys(options).length === 0,
         task: () =>
           new Listr([
@@ -253,7 +256,7 @@ class Client {
             },
           ]),
       },
-    ]);
+    ]).run();
   }
 
   async waitForLoading(page: Page): Promise<void> {
@@ -288,70 +291,73 @@ class Client {
     logger.succeed();
   }
 
-  async embed(page: Page): Promise<void> {
-    const hints = [
-      "https://gist.github.com/",
-      "https://medium.com/",
-      "https://twitter.com/",
-    ];
-    const logger = this.context.startLog("embedding");
+  embed(page: Page): ListrItem {
+    return {
+      title: "embed URLs",
+      task: async (ctx, task) => {
+        const hints = [
+          "https://gist.github.com/",
+          "https://medium.com/",
+          "https://twitter.com/",
+        ];
+        const jsHandle = await page.evaluateHandle((hints: Array<string>) => {
+          return Array.prototype.filter.call(
+            document.querySelectorAll(
+              'a.markup--anchor.markup--p-anchor[target="_blank"]',
+            ),
+            el => {
+              const url = el.innerText;
+              for (const hint of hints) {
+                if (url.indexOf(hint) === 0) {
+                  return true;
+                }
+              }
+              return false;
+            },
+          );
+        }, hints);
+        const props: Map<string, JSHandle> = await jsHandle.getProperties();
+        for (const prop of props.values()) {
+          const el = prop.asElement();
+          if (el != null) {
+            const { x, y, width, height } = await el.boundingBox();
+            const right = Math.floor(x + width - 1);
+            const bottom = Math.floor(y + height - 1);
 
-    const jsHandle = await page.evaluateHandle((hints: Array<string>) => {
-      return Array.prototype.filter.call(
-        document.querySelectorAll(
-          'a.markup--anchor.markup--p-anchor[target="_blank"]',
-        ),
-        el => {
-          const url = el.innerText;
-          for (const hint of hints) {
-            if (url.indexOf(hint) === 0) {
-              return true;
-            }
+            task.output = `expand at (${right}, ${bottom})`;
+
+            await page.mouse.click(right, bottom, { delay: 100 });
+            await page.keyboard.press("Enter", { delay: 100 });
+            await page.keyboard.press("Backspace", { delay: 100 });
           }
-          return false;
-        },
-      );
-    }, hints);
-    const props: Map<string, JSHandle> = await jsHandle.getProperties();
-    for (const prop of props.values()) {
-      const el = prop.asElement();
-      if (el != null) {
-        const { x, y, width, height } = await el.boundingBox();
-        const right = Math.floor(x + width - 1);
-        const bottom = Math.floor(y + height - 1);
-
-        logger.log(`expand at (${right}, ${bottom})`);
-
-        await page.mouse.click(right, bottom, { delay: 100 });
-        await page.keyboard.press("Enter", { delay: 100 });
-        await page.keyboard.press("Backspace", { delay: 100 });
-      }
-    }
-
-    logger.succeed();
+        }
+      },
+    };
   }
 
-  async savePost(page: Page): Promise<void> {
-    const logger = this.context.startLog("saving post");
-    for (let i = 0; ; i++) {
-      try {
-        await page.waitForResponse(
-          "POST",
-          `https://medium.com/p/${HEX}/deltas?(.*)`,
-        );
+  savePost(page: Page): ListrItem {
+    return {
+      title: "save post",
+      task: async (ctx, task) => {
+        for (let i = 0; ; i++) {
+          try {
+            await page.waitForResponse(
+              "POST",
+              `https://medium.com/p/${HEX}/deltas?(.*)`,
+            );
 
-        logger.log(`saved partially ${i}`);
+            task.output = `saved partially ${i}`;
 
-        continue;
-      } catch (err) {
-        if (err === "timeout") {
-          logger.succeed();
-          return;
+            continue;
+          } catch (err) {
+            if (err === "timeout") {
+              return;
+            }
+            throw err;
+          }
         }
-        logger.fail(err);
-        throw err;
-      }
-    }
+      },
+    };
   }
 
   async openPostOptions(page: Page): Promise<void> {
