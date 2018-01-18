@@ -1,5 +1,6 @@
 // @flow
 
+const Listr = require("listr");
 const Client = require("@minodisk/medkit");
 const createClient = require("./client");
 const { md2html } = require("@minodisk/medmd");
@@ -38,7 +39,7 @@ const syncPost = async (client: Client, path: string) => {
     const newText = toText(post);
     await writeFile(path, newText);
   } else {
-    await client.updatePost(id, html, options);
+    new Listr(client.updatePost(id, html, options)).run();
   }
   await client.close();
 };

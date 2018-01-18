@@ -9,6 +9,7 @@ const patchToPage = require("./page");
 
 const HEX = "([\\dabcdef]+)";
 
+import type { ListrItem, Task } from "listr";
 import type {
   Browser,
   Page,
@@ -19,15 +20,6 @@ import type {
   Context,
   LaunchOptions,
 } from "./types";
-
-type ListrItem = {
-  title: string,
-  task: (ctx: any, task: Task) => Promise<void>,
-};
-
-type Task = {
-  output: string,
-};
 
 class Client {
   context: Context;
@@ -129,51 +121,97 @@ class Client {
     return page;
   }
 
-  async login(): Promise<void> {
-    const logger = this.context.startLog("login");
-    const browser = await puppeteer.launch({
-      ...this.launchOptions,
-      headless: false,
-    });
-    const page = patchToPage(await browser.newPage());
-    await page.setViewport({ width: 1000, height: 1000 });
-
-    logger.log("open login page");
-    await page.goto(
-      "https://medium.com/m/signin?redirect=https://medium.com/me/stats",
-    );
-
-    logger.log("wait for user operation");
-    await page.waitForResponse("GET", "https://medium.com/me/stats", {
-      timeout: 0,
-    });
-    this.cookies = await page.cookies();
-    await browser.close();
-    await writeFile(this.cookiesPath, JSON.stringify(this.cookies));
-
-    logger.succeed();
-  }
-
-  async gotoAndLogin(
+  gotoAndLogin(
     page: Page,
     url: string,
     options?: { timeout?: number },
-  ): Promise<void> {
-    for (;;) {
-      const deferred = defer(
-        page.waitForResponse("GET", url, {
-          timeout: 0,
-        }),
-      );
-      await page.goto(url, options);
-      const { status } = await deferred();
-      if (status >= 300) {
-        await this.login();
-        await page.setCookie(...this.cookies);
-        continue;
-      }
-      return;
-    }
+  ): ListrItem {
+    return {
+      title: "check login status",
+      task: ({}, task) => {
+        return new Listr([
+          {
+            title: `go to ${url}`,
+            task: async ctx => {
+              const deferred = defer(
+                page.waitForResponse("GET", url, {
+                  timeout: 0,
+                }),
+              );
+              await page.goto(url, options);
+              const { status } = await deferred();
+              ctx.status = status;
+            },
+          },
+          {
+            title: "login and set cookies",
+            skip: ctx => ctx.status < 300,
+            task: () => {
+              return new Listr([
+                this.login(),
+                {
+                  title: "set cookies",
+                  task: () => page.setCookie(...this.cookies),
+                },
+              ]);
+            },
+          },
+        ]);
+      },
+    };
+  }
+
+  login(): ListrItem {
+    return {
+      title: "login",
+      task: (): Listr<{ page: Page }> => {
+        return new Listr([
+          {
+            title: "open browser",
+            task: async ctx => {
+              ctx.browser = await puppeteer.launch({
+                ...this.launchOptions,
+                headless: false,
+              });
+            },
+          },
+          {
+            title: "open new page",
+            task: async ctx => {
+              ctx.page = patchToPage(await ctx.browser.newPage());
+              return ctx.page.setViewport({ width: 1000, height: 1000 });
+            },
+          },
+          {
+            title: "go to login page",
+            task: ctx =>
+              ctx.page.goto(
+                "https://medium.com/m/signin?redirect=https://medium.com/me/stats",
+              ),
+          },
+          {
+            title: "wait for user operation",
+            task: ctx =>
+              ctx.page.waitForResponse("GET", "https://medium.com/me/stats", {
+                timeout: 0,
+              }),
+          },
+          {
+            title: "get cookies",
+            task: ctx => (this.cookies = ctx.page.cookies()),
+          },
+          {
+            title: "close browser",
+            task: ctx => ctx.browser.close(),
+          },
+          {
+            title: "write cookies file",
+            task: () =>
+              writeFile(this.cookiesPath, JSON.stringify(this.cookies)),
+          },
+        ]);
+      },
+    };
   }
 
   async createPost(html: string, options?: PostOptions): Promise<string> {
@@ -196,19 +234,35 @@ class Client {
     return postId;
   }
 
-  async updatePost(
+  updatePost(
     postId: string,
     html: string,
     options?: PostOptions,
-  ): Promise<void> {
-    const page = await this.newPage(true);
-    await this.gotoAndPaste(
-      page,
-      `https://medium.com/p/${postId}/edit`,
-      html,
-      options,
-    );
-    await page.close();
+  ): Array<ListrItem> {
+    return [
+      {
+        title: "open new page",
+        task: async ctx => {
+          ctx.page = await this.newPage(true);
+        },
+      },
+      {
+        title: "go to post page",
+        task: ctx =>
+          new Listr(
+            this.gotoAndPaste(
+              ctx.page,
+              `https://medium.com/p/${postId}/edit`,
+              html,
+              options,
+            ),
+          ),
+      },
+      {
+        title: "close page",
+        task: ctx => ctx.page.close(),
+      },
+    ];
   }
 
   gotoAndPaste(
@@ -216,12 +270,9 @@ class Client {
     url: string,
     html: string,
     options?: PostOptions,
-  ): Promise<void> {
-    return new Listr([
-      {
-        title: "login",
-        task: () => this.gotoAndLogin(page, url, { timeout: 0 }),
-      },
+  ): Array<ListrItem> {
+    return [
+      this.gotoAndLogin(page, url, { timeout: 0 }),
       {
         title: "loading",
         task: () => this.waitForLoading(page),
@@ -230,10 +281,7 @@ class Client {
         title: "initializing",
         task: () => this.waitForInitializing(page),
       },
-      {
-        title: "pasting",
-        task: () => this.pasteHTML(page, html),
-      },
+      this.pasteHTML(page, html),
       this.embed(page),
       this.savePost(page),
       {
@@ -245,18 +293,13 @@ class Client {
               title: "open post options",
               task: () => this.openPostOptions(page),
             },
-            {
-              title: "remove current tags",
-              task: () => this.removeTags(page),
-            },
-            {
-              title: "add new tags",
-              skip: () => options.tags == null || options.tags.length === 0,
-              task: () => this.addTags(page, options.tags),
-            },
+            this.removeTags(page),
+            ...(options == null || options.tags == null
+              ? []
+              : [this.addTags(page, options.tags)]),
           ]),
       },
-    ]).run();
+    ];
   }
 
   async waitForLoading(page: Page): Promise<void> {
@@ -274,21 +317,34 @@ class Client {
     logger.succeed();
   }
 
-  async pasteHTML(page: Page, html: string): Promise<void> {
-    const logger = this.context.startLog("pasting");
+  pasteHTML(page: Page, html: string): ListrItem {
     const selector = "div.section-inner";
-    await page.waitForSelector(selector);
-
-    logger.log("focus");
-    await page.focus(selector);
-    logger.log("select all");
-    await page.execCommand("selectAll");
-    logger.log("set data to clipboard");
-    await page.setDataToClipboard("text/html", html);
-    logger.log("paste");
-    await page.execCommandViaExtension("paste");
-
-    logger.succeed();
+    return {
+      title: "paste HTML",
+      task: () =>
+        new Listr([
+          {
+            title: "wait for selector",
+            task: () => page.waitForSelector(selector),
+          },
+          {
+            title: "focus at text area",
+            task: () => page.focus(selector),
+          },
+          {
+            title: "select all",
+            task: () => page.execCommand("selectAll"),
+          },
+          {
+            title: "set data to clipboard",
+            task: () => page.setDataToClipboard("text/html", html),
+          },
+          {
+            title: "paste",
+            task: () => page.execCommandViaExtension("paste"),
+          },
+        ]),
+    };
   }
 
   embed(page: Page): ListrItem {
@@ -323,9 +379,7 @@ class Client {
             const { x, y, width, height } = await el.boundingBox();
             const right = Math.floor(x + width - 1);
             const bottom = Math.floor(y + height - 1);
-
             task.output = `expand at (${right}, ${bottom})`;
-
             await page.mouse.click(right, bottom, { delay: 100 });
             await page.keyboard.press("Enter", { delay: 100 });
             await page.keyboard.press("Backspace", { delay: 100 });
@@ -338,16 +392,14 @@ class Client {
   savePost(page: Page): ListrItem {
     return {
       title: "save post",
-      task: async (ctx, task) => {
+      task: async (ctx, task): Promise<void> => {
         for (let i = 0; ; i++) {
           try {
             await page.waitForResponse(
               "POST",
               `https://medium.com/p/${HEX}/deltas?(.*)`,
             );
-
             task.output = `saved partially ${i}`;
-
             continue;
           } catch (err) {
             if (err === "timeout") {
@@ -368,65 +420,98 @@ class Client {
     await button.click();
   }
 
-  async removeTags(page: Page): Promise<void> {
-    const logger = this.context.startLog("removing tags");
-
-    const selector = "div.js-tagToken";
-    try {
-      await page.waitForSelector(selector, { timeout: 1000 });
-    } catch (err) {
-      logger.succeed();
-      return;
-    }
-    const tips = await page.$$(selector);
-    if (tips.length === 0) {
-      logger.succeed();
-      return;
-    }
-
-    for (let i = 0; i < tips.length; i++) {
-      const tip = tips[i];
-      const label = await tip.$('button[data-action="focus-token"]');
-      const tag = await (await label.getProperty("innerText")).jsonValue();
-      logger.log(`${i + 1}/${tips.length} ${tag}`);
-      const button = await tip.$('button[data-action="remove-token"]');
-      await button.click();
-      try {
-        await page.waitForResponse(
-          "POST",
-          `https://medium.com/_/api/posts/${HEX}/tags`,
-        );
-      } catch (err) {
-        logger.fail(err);
-        throw err;
-      }
-    }
-
-    logger.succeed();
+  removeTags(page: Page): ListrItem {
+    return {
+      title: "remove tags",
+      task: (_, task) => {
+        const selector = "div.js-tagToken";
+        return new Listr([
+          {
+            title: `wait for selector '${selector}'`,
+            task: async () => {
+              try {
+                await page.waitForSelector(selector, { timeout: 1000 });
+              } catch (err) {
+                task.skip(`no tag`);
+              }
+            },
+          },
+          {
+            title: `get tags`,
+            task: async ctx => {
+              ctx.tips = await page.$$(selector);
+              if (ctx.tips.length === 0) {
+                task.skip(`no tag`);
+              }
+            },
+          },
+          {
+            title: `remove tags`,
+            task: ctx =>
+              new Listr(
+                ctx.tips.map((tip, i) => {
+                  return {
+                    title: `remove tag: ${i}`,
+                    task: async () => {
+                      const label = await tip.$(
+                        'button[data-action="focus-token"]',
+                      );
+                      const tag = await (await label.getProperty(
+                        "innerText",
+                      )).jsonValue();
+                      const button = await tip.$(
+                        'button[data-action="remove-token"]',
+                      );
+                      await button.click();
+                      await page.waitForResponse(
+                        "POST",
+                        `https://medium.com/_/api/posts/${HEX}/tags`,
+                      );
+                    },
+                  };
+                }),
+              ),
+          },
+        ]);
+      },
+    };
   }
 
-  async addTags(page: Page, tags: Array<string>): Promise<void> {
-    const logger = this.context.startLog("adding tags");
-
-    const selector = "div.js-tagInput span";
-    await page.waitForSelector(selector);
-    await page.click(selector);
-    for (let i = 0; i < tags.length; i++) {
-      const tag = tags[i];
-      logger.log(`${i + 1}/${tags.length} ${tag}`);
-      await page.type(selector, `${tag},`);
-      try {
-        await page.waitForResponse(
-          "POST",
-          `https://medium.com/_/api/posts/${HEX}/tags`,
-        );
-      } catch (err) {
-        logger.fail(err);
-        throw err;
-      }
-    }
-
-    logger.succeed();
+  addTags(page: Page, tags: Array<string>): ListrItem {
+    return {
+      title: "add tags",
+      task: () => {
+        const selector = "div.js-tagInput span";
+        return new Listr([
+          {
+            title: `wait for selector '${selector}'`,
+            task: () => page.waitForSelector(selector),
+          },
+          {
+            title: `click selector '${selector}'`,
+            task: () => page.click(selector),
+          },
+          {
+            title: `add tags`,
+            task: () =>
+              new Listr(
+                tags.map((tag, i) => {
+                  return {
+                    title: `add tag: '${tag}'`,
+                    task: async () => {
+                      await page.type(selector, `${tag},`);
+                      await page.waitForResponse(
+                        "POST",
+                        `https://medium.com/_/api/posts/${HEX}/tags`,
+                      );
+                    },
+                  };
+                }),
+              ),
+          },
+        ]);
+      },
+    };
   }
 
   async readPostOptions(page: Page): Promise<PostOptions> {
@@ -449,7 +534,6 @@ class Client {
   ): Promise<{ html: string, options: PostOptions }> {
     const logger = this.context.startLog(`reading post`);
     logger.log(`${postId}`);
-
     try {
       const page = await this.newPage();
       const url = `https://medium.com/p/${postId}/edit`;

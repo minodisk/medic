@@ -2,15 +2,14 @@
   "private": true,
   "name": "medic",
   "version": "0.8.0",
-  "workspaces": ["packages/*"],
+  "workspaces": [
+    "packages/*"
+  ],
   "scripts": {
     "format-root": "yarn prettier --write *.md",
-    "format":
-      "yarn format-root && yarn workspace @minodisk/medic format && yarn workspace @minodisk/medkit format && yarn workspace @minodisk/medmd format",
-    "build":
-      "yarn format-root && yarn workspace @minodisk/medic build && yarn workspace @minodisk/medkit build && yarn workspace @minodisk/medmd build",
-    "test":
-      "yarn workspace @minodisk/medic test && yarn workspace @minodisk/medkit test && yarn workspace @minodisk/medmd test"
+    "format": "yarn format-root && yarn workspace @minodisk/medic format && yarn workspace @minodisk/medkit format && yarn workspace @minodisk/medmd format",
+    "build": "yarn format-root && yarn workspace @minodisk/medic build && yarn workspace @minodisk/medkit build && yarn workspace @minodisk/medmd build",
+    "test": "yarn workspace @minodisk/medic test && yarn workspace @minodisk/medkit test && yarn workspace @minodisk/medmd test"
   },
   "devDependencies": {
     "commander": "^2.12.2",
